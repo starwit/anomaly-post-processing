@@ -28,12 +28,11 @@ jobs:
       env:
         GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
-        echo "DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2)"  >> $GITHUB_ENV
         docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomly-post-processing:latest .
 
     - name: push docker
       run: |
-        DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2)
+        DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
         docker tag docker.internal.starwit-infra.de/anomly-post-processing:latest docker.internal.starwit-infra.de/anomly-post-processing:${{ env.DOCKER_VERSION }}
         docker push docker.internal.starwit-infra.de/anomly-post-processing:${{ env.DOCKER_VERSION }}
         docker push docker.internal.starwit-infra.de/anomly-post-processing:latest
