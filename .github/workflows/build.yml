@@ -21,10 +21,8 @@ jobs:
       env:
         GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
-        export
         docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomly-post-processing:latest .
 
     - name: push docker latest
       run: |
-        export
-        docker push docker.internal.starwit-infra.de/anomly-post-processing:latest .
+        docker push docker.internal.starwit-infra.de/anomly-post-processing:latest
