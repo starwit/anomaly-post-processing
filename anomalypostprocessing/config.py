@@ -10,10 +10,10 @@ class RedisConfig(BaseModel):
     host: str = 'localhost'
     port: Annotated[int, Field(ge=1, le=65536)] = 6379
     stream_id: str = 'stream1'
-    input_stream_prefix: str = 'objecttracker'
-    output_stream_prefix: str = 'mystage'
+    input_stream_prefix: str = 'anomalydetection'
+    output_stream_prefix: str = 'reportingaicockpit'
 
-class MyStageConfig(BaseSettings):
+class AnomalyPostProcessingConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING
     redis: RedisConfig = RedisConfig()
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000

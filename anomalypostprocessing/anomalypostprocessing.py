@@ -2,22 +2,22 @@ import logging
 from typing import Any, Dict, NamedTuple
 
 from prometheus_client import Counter, Histogram, Summary
-from visionapi.messages_pb2 import BoundingBox, SaeMessage
+from visionapi.messages_pb2 import SaeMessage
 
-from .config import MyStageConfig
+from .config import AnomalyPostProcessingConfig
 
 logging.basicConfig(format='%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s')
 logger = logging.getLogger(__name__)
 
-GET_DURATION = Histogram('my_stage_get_duration', 'The time it takes to deserialize the proto until returning the tranformed result as a serialized proto',
+GET_DURATION = Histogram('anomaly_post_processing_get_duration', 'The time it takes to deserialize the proto until returning the tranformed result as a serialized proto',
                          buckets=(0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25))
-OBJECT_COUNTER = Counter('my_stage_object_counter', 'How many detections have been transformed')
-PROTO_SERIALIZATION_DURATION = Summary('my_stage_proto_serialization_duration', 'The time it takes to create a serialized output proto')
-PROTO_DESERIALIZATION_DURATION = Summary('my_stage_proto_deserialization_duration', 'The time it takes to deserialize an input proto')
+OBJECT_COUNTER = Counter('anomaly_post_processing_object_counter', 'How many detections have been transformed')
+PROTO_SERIALIZATION_DURATION = Summary('anomaly_post_processing_proto_serialization_duration', 'The time it takes to create a serialized output proto')
+PROTO_DESERIALIZATION_DURATION = Summary('anomaly_post_processing_proto_deserialization_duration', 'The time it takes to deserialize an input proto')
 
 
-class MyStage:
-    def __init__(self, config: MyStageConfig) -> None:
+class AnomalyPostProcessing:
+    def __init__(self, config: AnomalyPostProcessingConfig) -> None:
         self.config = config
         logger.setLevel(self.config.log_level.value)
 
@@ -29,7 +29,7 @@ class MyStage:
         sae_msg = self._unpack_proto(input_proto)
 
         # Your implementation goes (mostly) here
-        logger.warning('Received SAE message from pipeline')
+        logger.warning('Received anomaly message from pipeline')
 
         return self._pack_proto(sae_msg)
         
