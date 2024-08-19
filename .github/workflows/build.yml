@@ -17,9 +17,16 @@ jobs:
     - name: checkout
       uses: actions/checkout@v4
 
-    - name: build docker
+    - name: build docker latest
       env:
         GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
         export
-        docker build --secret id=GIT_CREDENTIALS -t starwitorg/anomly-post-processing:latest .
+        docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomly-post-processing:latest .
+
+    - name: push docker latest
+      env:
+        GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
+      run: |
+        export
+        docker push --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomly-post-processing:latest .
