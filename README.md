@@ -15,7 +15,7 @@ This component consumes Anomalies from Valkey, save videos and sends reporting d
 ## Setup
 - Create virtual environment with `python3 -m venv .venv && source .venv/bin/activate`
 - Run `poetry install`, this should install all necessary dependencies
-- Run `poetry run python main.py`. If you see log messages like `Received SAE message from pipeline`, everything works as intended.
+- Run `poetry run python main.py`. If you see log messages like `Received anomaly message from pipeline`, everything works as intended.
 
 ## Configuration
 This template employs pydantic-settings for configuration handling. On startup, the following happens:
