@@ -18,7 +18,7 @@ RUN poetry install
     
 # Copy the rest of the project
 COPY . /code/
-
+RUN poetry run python test.py
 
 ### Main artifact / deliverable image
 
