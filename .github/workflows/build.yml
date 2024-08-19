@@ -1,4 +1,4 @@
-name: docker-internal build and push latest
+name: docker-internal build and push
 
 on:
   workflow_dispatch:
@@ -28,8 +28,12 @@ jobs:
       env:
         GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
+        echo "DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2)"  >> $GITHUB_ENV
         docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomly-post-processing:latest .
 
     - name: push docker latest
       run: |
+        DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2)
+        docker tag docker.internal.starwit-infra.de/anomly-post-processing:latest docker.internal.starwit-infra.de/anomly-post-processing:$DOCKER_VERSION
+        docker push docker.internal.starwit-infra.de/anomly-post-processing:$DOCKER_VERSION
         docker push docker.internal.starwit-infra.de/anomly-post-processing:latest
