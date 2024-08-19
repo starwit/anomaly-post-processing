@@ -1,0 +1,25 @@
+name: docker build
+
+on:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  build:
+    name: "Build and run docker image"
+    runs-on: [self-hosted, linux, X64]
+
+    steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: build docker
+      env:
+        GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
+      run: |
+        export
+        docker build --secret id=GIT_CREDENTIALS -t starwitorg/anomly-post-processing:latest .
