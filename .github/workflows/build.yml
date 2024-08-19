@@ -33,6 +33,6 @@ jobs:
     - name: push docker
       run: |
         DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
-        docker tag docker.internal.starwit-infra.de/anomly-post-processing:latest docker.internal.starwit-infra.de/anomly-post-processing:${{ env.DOCKER_VERSION }}
-        docker push docker.internal.starwit-infra.de/anomly-post-processing:${{ env.DOCKER_VERSION }}
+        docker tag docker.internal.starwit-infra.de/anomly-post-processing:latest docker.internal.starwit-infra.de/anomly-post-processing:$DOCKER_VERSION
+        docker push docker.internal.starwit-infra.de/anomly-post-processing:$DOCKER_VERSION
         docker push docker.internal.starwit-infra.de/anomly-post-processing:latest
