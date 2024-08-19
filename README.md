@@ -13,7 +13,7 @@ This component consumes Anomalies from Valkey, save videos and sends reporting d
 - Running instance of starwit-awareness-engine, anomaly detection and Valkey
 
 ## Setup
-- run `python3 -m venv .venv && source .venv/bin/activate`
+- Create virtual environment with `python3 -m venv .venv && source .venv/bin/activate`
 - Run `poetry install`, this should install all necessary dependencies
 - Run `poetry run python main.py`. If you see log messages like `Received SAE message from pipeline`, everything works as intended.
 
