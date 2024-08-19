@@ -1,3 +1,3 @@
 #!/bin/bash
-
-docker build -t docker.internal.starwit-infra.de/anomly-post-processing:$(poetry version --short) .
+docker login docker.internal.starwit-infra.de
+docker build -t docker.internal.starwit-infra.de/anomaly-post-processing:$(poetry version --short) .
