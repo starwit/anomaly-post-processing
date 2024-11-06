@@ -61,7 +61,7 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
 
     for tr in trajectories:
         for tr_point in tr.trajectory_points:
-            if tr_point.timestamp_utc_ms == datetime.fromtimestamp(frame.timestamp_utc_ms/1_000, tz=timezone.utc):
+            if tr_point.timestamp_utc_ms == frame.timestamp_utc_ms:
                 center_points.append(tr_point.detection_center)
 
     frame_data = frame.frame_data_jpeg
@@ -81,6 +81,8 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
 
 
 def store_frames(frames: list[JpegFrame], path: str, trajectories: list[Trajectory]):
+    print(trajectories)
+    print(trajectories[0].trajectory_points)
     seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
     framerate = len(frames) / seconds_passed
 

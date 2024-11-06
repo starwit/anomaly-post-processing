@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Any, Dict, NamedTuple
-
+from datetime import datetime
 from prometheus_client import Counter, Histogram, Summary
 from visionapi.anomaly_pb2 import AnomalyMessage
 from visionapi.reporting_pb2 import IncidentMessage
@@ -65,15 +65,19 @@ class AnomalyPostProcessing:
     
     def _save_anomalies_to_file_system(self, input_msg: AnomalyMessage, 
                                        path: str, 
-                                       raw_frames: bool = True):
+                                       raw_frames: bool = False):
         trajectories = input_msg.trajectories
         if len(trajectories) == 0: 
             return
 
+        timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = path + "/" + timestamp_string
+        os.makedirs(path, exist_ok=True)
+
         frames = input_msg.jpeg_frames
 
-        #print("TRRRR: ", len(trajectories))
-        #print("FRAMES: ", len(frames))
+        print("TRAJECTORIES: ", len(trajectories))
+        print("FRAMES: ", len(frames))
         if len(frames) < 2: return
 
         if raw_frames:
