@@ -63,9 +63,7 @@ class AnomalyPostProcessing:
             self._print_message(output_msg)
         return output_msg.SerializeToString()
     
-    def _save_anomalies_to_file_system(self, input_msg: AnomalyMessage, 
-                                       path: str, 
-                                       raw_frames: bool = False):
+    def _save_anomalies_to_file_system(self, input_msg: AnomalyMessage, path: str):
         trajectories = input_msg.trajectories
         if len(trajectories) == 0: 
             return
@@ -75,12 +73,9 @@ class AnomalyPostProcessing:
         os.makedirs(path, exist_ok=True)
 
         frames = input_msg.jpeg_frames
-
-        print("TRAJECTORIES: ", len(trajectories))
-        print("FRAMES: ", len(frames))
         if len(frames) < 2: return
 
-        if raw_frames:
+        if self.config.raw_frames:
             store_frames(frames, path, trajectories)
         else:
             store_video(frames, path, trajectories)
