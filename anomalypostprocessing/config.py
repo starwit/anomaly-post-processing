@@ -17,6 +17,7 @@ class AnomalyPostProcessingConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING
     redis: RedisConfig = RedisConfig()
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
+    raw_frames: bool = False            # store anomaly as raw frames or generate annotated video
 
     model_config = SettingsConfigDict(env_nested_delimiter='__')
 

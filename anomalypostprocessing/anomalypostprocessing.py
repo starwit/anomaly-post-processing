@@ -1,11 +1,12 @@
 import logging
 import os
 from typing import Any, Dict, NamedTuple
-
+from datetime import datetime
 from prometheus_client import Counter, Histogram, Summary
 from visionapi.anomaly_pb2 import AnomalyMessage
 from visionapi.reporting_pb2 import IncidentMessage
 from google.protobuf import text_format
+from anomalypostprocessing.storeoutput import store_frames, store_video
 
 
 from .config import AnomalyPostProcessingConfig
@@ -35,6 +36,7 @@ class AnomalyPostProcessing:
 
         # TODO Your implementation goes (mostly) here
         logger.warning('Received anomaly message from pipeline')
+        self._save_anomalies_to_file_system(anomaly_msg, "output")
         return self._create_output(anomaly_msg)
         
     @PROTO_DESERIALIZATION_DURATION.time()
@@ -60,6 +62,24 @@ class AnomalyPostProcessing:
         if self.isDebug:
             self._print_message(output_msg)
         return output_msg.SerializeToString()
+    
+    def _save_anomalies_to_file_system(self, input_msg: AnomalyMessage, path: str):
+        trajectories = input_msg.trajectories
+        if len(trajectories) == 0: 
+            return
+
+        timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = path + "/" + timestamp_string
+        os.makedirs(path, exist_ok=True)
+
+        frames = input_msg.jpeg_frames
+        if len(frames) < 2: return
+
+        if self.config.raw_frames:
+            store_frames(frames, path, trajectories)
+        else:
+            store_video(frames, path, trajectories)
+
     
     def _print_message(self, msg: Any):
         if not os.path.exists('target'):
