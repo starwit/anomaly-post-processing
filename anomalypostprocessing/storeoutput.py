@@ -9,14 +9,15 @@ import os
 import json
 import zipfile
 from zlib import crc32
-
+from minio import Minio
+from minio.error import S3Error 
+from .config import MinioConfig
 from visionapi.anomaly_pb2 import JpegFrame, Trajectory, TrajectoryPoint
 
 
 log = logging.getLogger(__name__)
 
-
-def store_video(frames: list[JpegFrame], path: str, trajectories: list[Trajectory]):
+def store_video(minio_config: MinioConfig, path: str, media_url: str, frames: list[JpegFrame], trajectories: list[Trajectory]):
     seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
     framerate = len(frames) / seconds_passed
     ffmpeg_command = [
@@ -41,7 +42,6 @@ def store_video(frames: list[JpegFrame], path: str, trajectories: list[Trajector
             log.error("Could not create video from frames")
             log.debug(str(ex))
             log.debug(process.stderr.read().decode())
-            
 
         process.stdin.close()
 
@@ -49,14 +49,29 @@ def store_video(frames: list[JpegFrame], path: str, trajectories: list[Trajector
 
         if process.returncode == 0:
             log.info("Video conversion completed successfully.")
+
+            timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            client = Minio(
+                endpoint = minio_config.endpoint,
+                access_key = minio_config.user,
+                secret_key = minio_config.password,
+                secure = minio_config.secure
+            )
+
+            client.fput_object(
+                        minio_config.bucket_name,
+                        media_url, 
+                        file_path = path + '/out.mp4',
+                        content_type='video/mp4'
+                    )
         else:
             log.error("Video conversion failed.")
             log.debug(process.stderr.read().decode())
     except (IOError, subprocess.SubprocessError) as e:
         print(e)
 
-
-def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory]):
+def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory]) -> bytes:
     center_points = []
 
     for tr in trajectories:
@@ -74,7 +89,7 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
         x, y = point.x, point.y
         x = int(x * width)
         y = int(y * height)
-        cv2.circle(frame_img, (x, y), 20, (0, 0, 255), -1)
+        cv2.circle(frame_img, (x, y), 70, (0, 0, 255), -1)
 
     _, encoded_img = cv2.imencode('.jpeg', frame_img)
     return encoded_img.tobytes()

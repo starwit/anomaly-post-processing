@@ -7,8 +7,6 @@ from visionapi.anomaly_pb2 import AnomalyMessage
 from visionapi.reporting_pb2 import IncidentMessage
 from google.protobuf import text_format
 from anomalypostprocessing.storeoutput import store_frames, store_video
-
-
 from .config import AnomalyPostProcessingConfig
 
 logging.basicConfig(format='%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s')
@@ -33,11 +31,12 @@ class AnomalyPostProcessing:
     @GET_DURATION.time()
     def get(self, input_proto: bytes) -> str:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
-
-        # TODO Your implementation goes (mostly) here
         logger.warning('Received anomaly message from pipeline')
-        self._save_anomalies_to_file_system(anomaly_msg, "output")
-        return self._create_output(anomaly_msg)
+        bucket_name = "anomalies"
+        media_url = datetime.now().strftime("%Y%m%d_%H%M%S") + ".mp4"
+
+        self._save_anomalies(anomaly_msg, "output", media_url)
+        return self._create_output(anomaly_msg, bucket_name, media_url)
         
     @PROTO_DESERIALIZATION_DURATION.time()
     def _unpack_proto(self, message_bytes: bytes) -> AnomalyMessage:
@@ -52,35 +51,34 @@ class AnomalyPostProcessing:
         return anomaly_msg.SerializeToString()
     
     @PROTO_SERIALIZATION_DURATION.time()
-    def _create_output(self, input_msg: AnomalyMessage) -> bytes:
+    def _create_output(self, input_msg: AnomalyMessage, bucket_name: str, media_url: str) -> bytes:
         if self.isDebug:
             for trajectory in input_msg.trajectories:
                 self._print_message(trajectory)
         output_msg = IncidentMessage()
+        output_msg.media_url = bucket_name + "/" + media_url
         output_msg.model_info.CopyFrom(input_msg.model_info)
         output_msg.timestamp_utc_ms = input_msg.jpeg_frames[0].timestamp_utc_ms
         if self.isDebug:
             self._print_message(output_msg)
         return output_msg.SerializeToString()
-    
-    def _save_anomalies_to_file_system(self, input_msg: AnomalyMessage, path: str):
+
+    def _save_anomalies(self, input_msg: AnomalyMessage, path: str, media_url: str):
         trajectories = input_msg.trajectories
+        minio_config = self.config.minio
+
         if len(trajectories) == 0: 
             return
 
-        timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-        path = path + "/" + timestamp_string
         os.makedirs(path, exist_ok=True)
-
         frames = input_msg.jpeg_frames
         if len(frames) < 2: return
 
         if self.config.raw_frames:
             store_frames(frames, path, trajectories)
         else:
-            store_video(frames, path, trajectories)
-
-    
+            store_video(minio_config, path, media_url, frames, trajectories)
+  
     def _print_message(self, msg: Any):
         if not os.path.exists('target'):
             os.makedirs('target')
