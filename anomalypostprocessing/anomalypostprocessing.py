@@ -32,11 +32,9 @@ class AnomalyPostProcessing:
     def get(self, input_proto: bytes) -> str:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
         logger.warning('Received anomaly message from pipeline')
-        bucket_name = "anomalies"
         media_url = datetime.now().strftime("%Y%m%d_%H%M%S") + ".mp4"
-
         self._save_anomalies(anomaly_msg, "output", media_url)
-        return self._create_output(anomaly_msg, bucket_name, media_url)
+        return self._create_output(anomaly_msg, media_url)
         
     @PROTO_DESERIALIZATION_DURATION.time()
     def _unpack_proto(self, message_bytes: bytes) -> AnomalyMessage:
@@ -51,12 +49,12 @@ class AnomalyPostProcessing:
         return anomaly_msg.SerializeToString()
     
     @PROTO_SERIALIZATION_DURATION.time()
-    def _create_output(self, input_msg: AnomalyMessage, bucket_name: str, media_url: str) -> bytes:
+    def _create_output(self, input_msg: AnomalyMessage, media_url: str) -> bytes:
         if self.isDebug:
             for trajectory in input_msg.trajectories:
                 self._print_message(trajectory)
         output_msg = IncidentMessage()
-        output_msg.media_url = bucket_name + "/" + media_url
+        output_msg.media_url = self.config.minio.bucket_name + "/" + media_url
         output_msg.model_info.CopyFrom(input_msg.model_info)
         output_msg.timestamp_utc_ms = input_msg.jpeg_frames[0].timestamp_utc_ms
         if self.isDebug:
