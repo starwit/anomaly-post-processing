@@ -1,0 +1,10 @@
+anomalyPostProcessing:
+  config:
+    minio:
+      user: minioadmin
+      password: #password for minio
+      endpoint: localhost:9000
+    redis:
+      host: localhost
+      port: 6379
+      stream_id: stream1
