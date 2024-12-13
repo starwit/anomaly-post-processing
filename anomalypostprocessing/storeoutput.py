@@ -1,22 +1,22 @@
+import json
+import logging
+import os
 import subprocess
 import time
-import logging
-from collections import defaultdict
-from datetime import datetime, timezone
-import cv2
-import numpy as np
-import os
-import json
 import zipfile
+from datetime import datetime
 from zlib import crc32
 
+import cv2
+import numpy as np
+from minio import Minio
 from visionapi.anomaly_pb2 import JpegFrame, Trajectory, TrajectoryPoint
 
+from .config import MinioConfig
 
 log = logging.getLogger(__name__)
 
-
-def store_video(frames: list[JpegFrame], path: str, trajectories: list[Trajectory]):
+def store_video(minio_config: MinioConfig, path: str, media_url: str, frames: list[JpegFrame], trajectories: list[Trajectory]):
     seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
     framerate = len(frames) / seconds_passed
     ffmpeg_command = [
@@ -27,7 +27,6 @@ def store_video(frames: list[JpegFrame], path: str, trajectories: list[Trajector
     
     try:
         process = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
         #tracks_unusual_movement = filter_relevant_tracks(tracks, anomalies)
         #tracks_dict = transform_trajectory_info(trajectories)
         start_time_millis = time.time() * 1000
@@ -39,24 +38,35 @@ def store_video(frames: list[JpegFrame], path: str, trajectories: list[Trajector
             log.debug("Average time per frame: " + str((time.time() * 1000 - start_time_millis) / len(frames)))
         except Exception as ex:
             log.error("Could not create video from frames")
-            log.debug(str(ex))
-            log.debug(process.stderr.read().decode())
-            
+            log.error(str(ex))
+            log.error(process.stderr.read().decode())
 
-        process.stdin.close()
-
-        process.wait()
+        process.communicate()
 
         if process.returncode == 0:
             log.info("Video conversion completed successfully.")
+
+            timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            client = Minio(
+                endpoint = minio_config.endpoint,
+                access_key = minio_config.user,
+                secret_key = minio_config.password,
+                secure = minio_config.secure
+            )
+
+            client.fput_object(
+                        minio_config.bucket_name,
+                        media_url, 
+                        file_path = path + '/out.mp4',
+                        content_type='video/mp4'
+                    )
         else:
             log.error("Video conversion failed.")
-            log.debug(process.stderr.read().decode())
     except (IOError, subprocess.SubprocessError) as e:
         print(e)
 
-
-def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory]):
+def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory]) -> bytes:
     center_points = []
 
     for tr in trajectories:

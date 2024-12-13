@@ -5,6 +5,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
 from visionlib.pipeline.settings import LogLevel, YamlConfigSettingsSource
 
+class MinioConfig(BaseModel):
+    endpoint: str = 'localhost:9000'
+    user: str = 'test'
+    password: str = 'test'
+    bucket_name: str = 'test'
+    secure: bool = True
 
 class RedisConfig(BaseModel):
     host: str = 'localhost'
@@ -15,6 +21,7 @@ class RedisConfig(BaseModel):
 
 class AnomalyPostProcessingConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING
+    minio: MinioConfig = MinioConfig()
     redis: RedisConfig = RedisConfig()
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
     raw_frames: bool = False            # store anomaly as raw frames or generate annotated video

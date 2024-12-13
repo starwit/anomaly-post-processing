@@ -16,6 +16,7 @@ pydantic-settings = "^2.0.3"
 prometheus-client = "^0.17.1"
 tomlkit = "^0.13.2"
 opencv-python = "^4.10.0.84"
+minio = "^7.2.12"
 
 [build-system]
 requires = ["poetry-core"]
