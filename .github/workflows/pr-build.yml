@@ -1,9 +1,11 @@
-name: docker-internal build and push
+name: PR Build
+
+# PR build
 
 on:
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
-
-permissions: read-all
 
 jobs:
   build:
@@ -29,9 +31,3 @@ jobs:
         GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
         docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomaly-post-processing:tmp .
-
-    - name: push docker latest and versioned
-      run: |
-        DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
-        docker tag docker.internal.starwit-infra.de/anomaly-post-processing:tmp docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION
-        docker push docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION
