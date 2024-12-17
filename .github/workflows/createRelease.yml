@@ -68,4 +68,4 @@ jobs:
       working-directory: deployment/helm
       run: |
         HELM_VERSION=$(cat ../../pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
-        curl -i --fail-with-body -u ${{ secrets.HELM_INTERNAL_USERNAME }}:${{ secrets.HELM_INTERNAL_PASSWORD }} --data-binary "@anomaly-post-processing-$HELM_VERSION.tgz" https://helm.internal.starwit-infra.de/api/chart
+        curl -i --fail-with-body -u ${{ secrets.HELM_INTERNAL_USERNAME }}:${{ secrets.HELM_INTERNAL_PASSWORD }} --data-binary "@anomaly-post-processing-$HELM_VERSION.tgz" https://helm.internal.starwit-infra.de/api/charts
