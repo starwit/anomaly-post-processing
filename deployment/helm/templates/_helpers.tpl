@@ -103,5 +103,5 @@ Derive prometheus service name
 Derive minio service name
 */}}
 {{- define "anomalyPostProcessing.minioEndpoint" -}}
-{{- printf "%s-%s" .Release.Name "minio:9000" -}}
+{{- printf "%s" "minio:9000" -}}
 {{- end }}
