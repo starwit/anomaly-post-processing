@@ -3,36 +3,33 @@
 {{- $imageTag := required "image tag for anomaly-post-processing is required" .image.tag }}
 {{- $config := . }}
 {{- $streamId := .config.redis.stream_id -}}
-{{- $instanceName := printf "anomaly-post-processing-%s" (lower .config.redis.stream_id) }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "anomalyPostProcessing.fullname" $ }}-{{ $instanceName }}
+  name: {{ include "anomalyPostProcessing.fullname" $ }}
   labels:
     {{- include "anomalyPostProcessing.labels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ $instanceName }}
+    app.kubernetes.io/component: {{ include "anomalyPostProcessing.fullname" $ }}
 spec:
   selector:
     matchLabels:
       {{- include "anomalyPostProcessing.selectorLabels" $ | nindent 6 }}
-      app.kubernetes.io/component: {{ $instanceName }}
+      app.kubernetes.io/component: {{ include "anomalyPostProcessing.fullname" $ }}
   template:
     metadata:
       annotations:
         anomalyPostProcessing.starwit.de/stage: anomaly-post-processing
       labels:
         {{- include "anomalyPostProcessing.selectorLabels" $ | nindent 8 }}
-        app.kubernetes.io/component: {{ $instanceName }}
+        app.kubernetes.io/component: {{ include "anomalyPostProcessing.fullname" $ }}
     spec:
+      imagePullSecrets:
+        - name: internal-docker-registry
       serviceAccountName: {{ include "anomalyPostProcessing.serviceAccountName" $ }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
-      initContainers:
-        - name: wait-for-redis
-          image: valkey/valkey:7.2.6-alpine
-          command: ["sh", "-c", "while ! redis-cli -h {{ include "anomalyPostProcessing.redisServiceName" $ }} ping ; do echo \"$(date -Iseconds) - still waiting for redis\"; sleep 1; done"]
       containers:
-        - name: {{ $instanceName }}
+        - name: {{ include "anomalyPostProcessing.fullname" $ }}
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
           image: "{{ $imageRepo }}:{{ $imageTag }}"
@@ -46,6 +43,8 @@ spec:
               value: {{ include "anomalyPostProcessing.redisServicePort" $ }}
             - name: REDIS__STREAM_ID
               value: {{ $streamId | quote }}
+            - name: MINIO__ENDPOINT
+              value: {{ include "anomalyPostProcessing.minioEndpoint" $ }}
           ports:
             - name: prometheus
               containerPort: 8000

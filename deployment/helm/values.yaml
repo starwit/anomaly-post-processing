@@ -1,10 +1,11 @@
-nameOverride: ""
-fullnameOverride: ""
-
+nameOverride: "anomaly-post-processing"
+fullnameOverride: "anomaly-post-processing"
+imageCredentials:
+  registry: docker.internal.starwit-infra.de
 anomalyPostProcessing:
   image:
     repository: docker.internal.starwit-infra.de/anomaly-post-processing
-    tag: 0.1.0
+    tag: 0.2.0
   config:
     minio:
       secure: True

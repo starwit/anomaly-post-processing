@@ -31,6 +31,13 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
+Create image pull secret for private docker registry
+*/}}
+{{- define "imagePullSecret" }}
+{{- printf "{\"auths\": {\"%s\": {\"auth\": \"%s\"}}}" .Values.imageCredentials.registry (printf "%s:%s" .Values.imageCredentials.username .Values.imageCredentials.password | b64enc) | b64enc }}
+{{- end }}
+
+{{/*
 Common labels
 */}}
 {{- define "anomalyPostProcessing.labels" -}}
@@ -61,14 +68,14 @@ Create the name of the service account to use
 Derive redis service name
 */}}
 {{- define "anomalyPostProcessing.redisServiceName" -}}
-{{- printf "%s-%s" .Release.Name "redis-master" -}}
+"valkey-primary"
 {{- end }}
 
 {{/*
 Derive redis metrics service name
 */}}
 {{- define "anomalyPostProcessing.redisMetricsServiceName" -}}
-{{- printf "%s-%s" .Release.Name "redis-metrics" -}}
+{{- printf "%s-%s" .Release.Name "metrics-server" -}}
 {{- end }}
 
 {{/*
@@ -90,4 +97,11 @@ Derive prometheus service name
 */}}
 {{- define "anomalyPostProcessing.prometheusServiceName" -}}
 {{- printf "%s-%s" .Release.Name "prometheus-server" -}}
+{{- end }}
+
+{{/*
+Derive minio service name
+*/}}
+{{- define "anomalyPostProcessing.minioEndpoint" -}}
+{{- printf "%s-%s" .Release.Name "minio:9000" -}}
 {{- end }}
