@@ -61,11 +61,11 @@ jobs:
     - name: run helm package
       working-directory: deployment/helm
       run: |
-        HELM_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
+        HELM_VERSION=$(cat ../../pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
         helm package . --version $HELM_VERSION
 
     - name: run helm push
       working-directory: application/target/helm
       run: |
-        HELM_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
+        HELM_VERSION=$(cat ../../pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
         curl -i --fail-with-body -u ${{ secrets.HELM_INTERNAL_USERNAME }}:${{ secrets.HELM_INTERNAL_PASSWORD }} --data-binary "@anomaly-post-processing-$HELM_VERSION.tgz" https://helm.internal.starwit-infra.de/api/chart
