@@ -51,9 +51,6 @@ jobs:
     - name: get helm
       uses: azure/setup-helm@v4
 
-    - name: login to Helm registry
-      run: helm registry login https://helm.internal.starwit-infra.de/api/charts -u ${{ secrets.HELM_INTERNAL_USERNAME }} -p ${{ secrets.HELM_INTERNAL_PASSWORD }}
-
     - name: run helm update
       working-directory: deployment/helm
       run: helm dep update
