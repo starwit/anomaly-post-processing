@@ -1,6 +1,5 @@
 {{- $imageRepo := required "image repository for anomaly-post-processing is required" .Values.image.repository }}
 {{- $streamId := .Values.config.redis.stream_id -}}
-{{- $imageTag := required "image tag for anomaly-post-processing is required" .Chart.appVersion }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -30,7 +29,7 @@ spec:
         - name: {{ include "fullname" $ }}
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
-          image: "{{ $imageRepo }}:{{ $imageTag }}"
+          image: "{{ $imageRepo }}:{{ include "imageTag" $ }}"
           imagePullPolicy: IfNotPresent
           env:
             - name: REDIS__HOST

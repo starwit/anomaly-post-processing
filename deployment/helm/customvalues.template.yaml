@@ -2,12 +2,11 @@ imageCredentials:
   registry: docker.internal.starwit-infra.de
   username: docker
   password: #password to set
-anomalyPostProcessing:
-  config:
-    minio:
-      user: minioadmin
-      password: #password for minio
-    redis:
-      stream_id: stream1
-      input_stream_prefix: anomalydetection
-      output_stream_prefix: reportingaicockpit
+config:
+  minio:
+    user: minioadmin
+    password: #password for minio
+  redis:
+    stream_id: stream1
+    input_stream_prefix: anomalydetection
+    output_stream_prefix: reportingaicockpit

@@ -2,16 +2,15 @@ nameOverride: "anomaly-post-processing"
 fullnameOverride: "anomaly-post-processing"
 imageCredentials:
   registry: docker.internal.starwit-infra.de
-anomalyPostProcessing:
-  image:
-    repository: docker.internal.starwit-infra.de/anomaly-post-processing
-  config:
-    minio:
-      secure: True
-      bucket_name: anomalies
-    redis:
-      stream_id: stream1
-      input_stream_prefix: anomalydetection
-      output_stream_prefix: reportingaicockpit
-    prometheus_port: 8001
+image:
+  repository: docker.internal.starwit-infra.de/anomaly-post-processing
+config:
+  minio:
+    secure: True
+    bucket_name: anomalies
+  redis:
+    stream_id: stream1
+    input_stream_prefix: anomalydetection
+    output_stream_prefix: reportingaicockpit
+  prometheus_port: 8001
 
