@@ -110,5 +110,5 @@ Derive prometheus service name
 Derive minio service name
 */}}
 {{- define "minioEndpoint" -}}
-{{- printf "%s" "minio:9000" -}}
+"minio:9000"
 {{- end }}
