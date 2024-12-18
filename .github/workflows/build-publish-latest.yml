@@ -42,9 +42,3 @@ jobs:
         registry: docker.internal.starwit-infra.de
         username: ${{ secrets.DOCKER_INTERNAL_USERNAME }}
         password: ${{ secrets.DOCKER_INTERNAL_PASSWORD }}
-        
-    - name: push docker versioned
-      run: |
-        DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
-        docker tag docker.internal.starwit-infra.de/anomaly-post-processing:tmp docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION
-        docker push docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION

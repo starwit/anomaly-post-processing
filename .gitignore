@@ -11,3 +11,4 @@ settings.yaml
 target/*
 deployment/helm/local.env.sh
 output/*
+*.mp4
