@@ -62,7 +62,7 @@ jobs:
       working-directory: deployment/helm
       run: |
         HELM_VERSION=$(cat ../../pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
-        helm package . --version $HELM_VERSION --appVersion $HELM_VERSION
+        helm package . --version $HELM_VERSION --app-version $HELM_VERSION
 
     - name: run helm push
       working-directory: deployment/helm
