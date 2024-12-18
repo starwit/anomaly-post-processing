@@ -22,5 +22,5 @@
 *.tmproj
 .vscode/
 
-sae-*.tgz
+anomaly-post-processing-*.tgz
 *.values.yaml
