@@ -4,4 +4,4 @@ metadata:
   name: anomaly-post-processing-config
 data:
   settings.yaml: |
-    {{- toYaml .Values.anomalyPostProcessing.config | nindent 4 }}
+    {{- toYaml .Values.config | nindent 4 }}

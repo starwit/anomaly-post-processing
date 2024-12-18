@@ -1,48 +1,46 @@
-{{- with .Values.anomalyPostProcessing }}
-{{- $imageRepo := required "image repository for anomaly-post-processing is required" .image.repository }}
-{{- $imageTag := required "image tag for anomaly-post-processing is required" .image.tag }}
-{{- $config := . }}
-{{- $streamId := .config.redis.stream_id -}}
+{{- $imageRepo := required "image repository for anomaly-post-processing is required" .Values.image.repository }}
+{{- $streamId := .Values.config.redis.stream_id -}}
+{{- $imageTag := required "image tag for anomaly-post-processing is required" .Chart.appVersion }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "anomalyPostProcessing.fullname" $ }}
+  name: {{ include "fullname" $ }}
   labels:
-    {{- include "anomalyPostProcessing.labels" $ | nindent 4 }}
-    app.kubernetes.io/component: {{ include "anomalyPostProcessing.fullname" $ }}
+    {{- include "labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ include "fullname" $ }}
 spec:
   selector:
     matchLabels:
-      {{- include "anomalyPostProcessing.selectorLabels" $ | nindent 6 }}
-      app.kubernetes.io/component: {{ include "anomalyPostProcessing.fullname" $ }}
+      {{- include "selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ include "fullname" $ }}
   template:
     metadata:
       annotations:
-        anomalyPostProcessing.starwit.de/stage: anomaly-post-processing
+        starwit.de/stage: anomaly-post-processing
       labels:
-        {{- include "anomalyPostProcessing.selectorLabels" $ | nindent 8 }}
-        app.kubernetes.io/component: {{ include "anomalyPostProcessing.fullname" $ }}
+        {{- include "selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ include "fullname" $ }}
     spec:
       imagePullSecrets:
         - name: internal-docker-registry
-      serviceAccountName: {{ include "anomalyPostProcessing.serviceAccountName" $ }}
+      serviceAccountName: {{ include "serviceAccountName" $ }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ include "anomalyPostProcessing.fullname" $ }}
+        - name: {{ include "fullname" $ }}
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
           image: "{{ $imageRepo }}:{{ $imageTag }}"
           imagePullPolicy: IfNotPresent
           env:
             - name: REDIS__HOST
-              value: {{ include "anomalyPostProcessing.redisServiceName" $ }}
+              value: {{ include "redisServiceName" $ }}
             - name: REDIS__PORT
-              value: {{ include "anomalyPostProcessing.redisServicePort" $ }}
+              value: {{ include "redisServicePort" $ }}
             - name: REDIS__STREAM_ID
               value: {{ $streamId | quote }}
             - name: MINIO__ENDPOINT
-              value: {{ include "anomalyPostProcessing.minioEndpoint" $ }}
+              value: {{ include "minioEndpoint" $ }}
           ports:
             - name: prometheus
               containerPort: 8000
@@ -67,5 +65,3 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 ---
-{{- end }}
-
