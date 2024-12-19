@@ -1,0 +1,19 @@
+name: Create release
+
+on:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  build:
+    name: "Build and run docker image"
+    runs-on: [self-hosted, linux, X64]
+    container:
+      image: acidrain/python-poetry:3.11-slim-1.8.5
+
+    steps:
+    - name: test container build
+      run: |
+        poetry --version
+        python --version
