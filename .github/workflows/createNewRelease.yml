@@ -29,9 +29,6 @@ jobs:
         - ./pyproject.toml:pyproject.toml
 
     steps:
-    - name: checkout
-      uses: actions/checkout@v4
-
     - name: output version
       run: |
         apt install git
