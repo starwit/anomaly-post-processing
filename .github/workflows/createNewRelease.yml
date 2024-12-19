@@ -7,11 +7,26 @@ permissions:
   contents: write
 
 jobs:
+  checkout:
+    name: checkout pyproject.toml
+    runs-on: [self-hosted, linux, X64]
+
+    steps:
+      - name: checkout project definition
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            pyproject.toml
+          sparse-checkout-cone-mode: false
+
   build:
     name: "Build and run docker image"
+    needs: checkout
     runs-on: [self-hosted, linux, X64]
     container:
       image: acidrain/python-poetry:3.11-slim-1.8.5
+      volumes:
+        - ./pyproject.toml:pyproject.toml
 
     steps:
     - name: checkout
@@ -28,8 +43,11 @@ jobs:
       run: |
         poetry version patch
 
-    - name: commit new version
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: modified project version in pyproject.toml 
+  checkin:
+    name: checkin pyproject.toml
+    needs: build
+    runs-on: [self-hosted, linux, X64]
 
+    steps:
+    - name: commit new version
+      run: echo "git add ."
