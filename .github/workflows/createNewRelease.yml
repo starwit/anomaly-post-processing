@@ -53,6 +53,9 @@ jobs:
     runs-on: [self-hosted, linux, X64]
 
     steps:
+    - name: Install GH CLI
+      uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
+
     - name: commit new version
       run: |
         git config --global user.email "code@starwit.de"
@@ -68,6 +71,13 @@ jobs:
         fi 
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create github release
+      run: gh release create $VERSION -F README.md
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{ inputs.versionChoice }}
+  
 
   build:
     name: "Build and run docker image"
