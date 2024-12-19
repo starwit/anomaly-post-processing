@@ -6,10 +6,13 @@ image:
   repository: docker.internal.starwit-infra.de/anomaly-post-processing
 config:
   minio:
+    endpoint: "minio:9000"
     secure: True
     bucket_name: anomalies
   redis:
     stream_id: stream1
+    host: valkey-primary
+    port: 6379
     input_stream_prefix: anomalydetection
     output_stream_prefix: reportingaicockpit
   prometheus_port: 8001

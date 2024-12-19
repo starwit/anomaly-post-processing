@@ -1,5 +1,4 @@
 {{- $imageRepo := required "image repository for anomaly-post-processing is required" .Values.image.repository }}
-{{- $streamId := .Values.config.redis.stream_id -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -31,15 +30,6 @@ spec:
             {{- toYaml $.Values.securityContext | nindent 12 }}
           image: "{{ $imageRepo }}:{{ include "imageTag" $ }}"
           imagePullPolicy: IfNotPresent
-          env:
-            - name: REDIS__HOST
-              value: {{ include "redisServiceName" $ }}
-            - name: REDIS__PORT
-              value: {{ include "redisServicePort" $ }}
-            - name: REDIS__STREAM_ID
-              value: {{ $streamId | quote }}
-            - name: MINIO__ENDPOINT
-              value: {{ include "minioEndpoint" $ }}
           ports:
             - name: prometheus
               containerPort: 8000
