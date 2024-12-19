@@ -50,7 +50,7 @@ jobs:
         if [ ! -z "$modifications" ]
         then
           echo "modifications found: $modifications"
-          git commit -m "modified changelog"
+          git commit -m "modified project version" ./pyproject.toml
           git push
         fi
 
