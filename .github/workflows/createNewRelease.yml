@@ -2,6 +2,16 @@ name: Create new release
 
 on:
   workflow_dispatch:
+    inputs:
+      versionChoice:
+        type: choice
+        required: true
+        description: Version Change
+        options:
+        - patch
+        - minor
+        - major
+        default: patch
 
 permissions:
   contents: write
@@ -33,7 +43,9 @@ jobs:
 
     - name: create new version in pyproject.toml
       run: |
-        poetry version patch
+        poetry version $VERSION
+      env:
+        VERSION: ${{ inputs.versionChoice }}
 
   pushversion:
     name: checkin pyproject.toml
@@ -59,7 +71,7 @@ jobs:
 
   build:
     name: "Build and run docker image"
-    needs: pushversion
+    needs: createversion
     runs-on: [self-hosted, linux, X64]
 
     steps:
@@ -103,7 +115,7 @@ jobs:
 
   publish_helm:
     name: "Publish helm chart"
-    needs: build
+    needs: createversion
     runs-on: [self-hosted, linux, X64]
     
     steps:
@@ -121,5 +133,3 @@ jobs:
       run: |
         HELM_VERSION=$(cat ../../pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
         curl -i --fail-with-body -u ${{ secrets.HELM_INTERNAL_USERNAME }}:${{ secrets.HELM_INTERNAL_PASSWORD }} --data-binary "@anomaly-post-processing-$HELM_VERSION.tgz" https://helm.internal.starwit-infra.de/api/charts
-
-
