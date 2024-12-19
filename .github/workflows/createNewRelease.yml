@@ -47,6 +47,7 @@ jobs:
       run: |
         git config --global user.email "code@starwit.de"
         git config --global user.name "Starwit"
+        git remote set-url origin git@github.com:starwit/anomaly-post-processing.git
         git add .
         modifications=$(git status | grep "modified" || true)
         if [ ! -z "$modifications" ]
@@ -54,9 +55,5 @@ jobs:
           echo "modifications found: $modifications"
           git commit -m "modified project version" ./pyproject.toml
           git push
-        fi
-      env:
-        CI: false
-        PRIVATE_REPO_USERNAME: ${{ vars.PRIVATE_REPO_USERNAME }}
- 
+        fi 
 
