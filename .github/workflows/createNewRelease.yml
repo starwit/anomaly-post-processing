@@ -47,7 +47,7 @@ jobs:
       run: |
         git config --global user.email "code@starwit.de"
         git config --global user.name "Starwit"
-        git remote set-url origin git@github.com:starwit/anomaly-post-processing.git
+        git remote set-url origin https://github.com/starwit/anomaly-post-processing.git
         git add .
         modifications=$(git status | grep "modified" || true)
         if [ ! -z "$modifications" ]
