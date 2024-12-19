@@ -73,7 +73,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create github release
-      run: gh release create $VERSION -F README.md
+      run: | 
+        APP_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
+        gh release create $APP_VERSION -F README.md
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VERSION: ${{ inputs.versionChoice }}
@@ -99,12 +101,11 @@ jobs:
       env:
         GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
-        ls -al
         docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomaly-post-processing:tmp .
 
 
   publish_docker:
-    name: "Build and publish docker"
+    name: "Publish docker"
     needs: build
     runs-on: [self-hosted, linux, X64]
 
