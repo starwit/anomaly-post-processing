@@ -11,9 +11,17 @@ jobs:
     runs-on: [self-hosted, linux, X64]
     container:
       image: acidrain/python-poetry:3.11-slim-1.8.5
+      volumes:
+        - .:/code
 
     steps:
     - name: test container build
       run: |
         poetry --version
         python --version
+
+    - name: build project
+      run: |
+        cd code
+        poetry install
+        poetry run python test.py
