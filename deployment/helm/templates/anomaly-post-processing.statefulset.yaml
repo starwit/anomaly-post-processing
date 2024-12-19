@@ -1,0 +1,56 @@
+{{- $imageRepo := required "image repository for anomaly-post-processing is required" .Values.image.repository }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fullname" $ }}
+  labels:
+    {{- include "labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ include "fullname" $ }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ include "fullname" $ }}
+  template:
+    metadata:
+      annotations:
+        starwit.de/stage: anomaly-post-processing
+      labels:
+        {{- include "selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ include "fullname" $ }}
+    spec:
+      imagePullSecrets:
+        - name: internal-docker-registry
+      serviceAccountName: {{ include "serviceAccountName" $ }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "fullname" $ }}
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          image: "{{ $imageRepo }}:{{ include "imageTag" $ }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: prometheus
+              containerPort: 8000
+          volumeMounts:
+            - name: config
+              mountPath: /code/settings.yaml
+              subPath: settings.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: anomaly-post-processing-config
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
