@@ -29,7 +29,6 @@ jobs:
     steps:
     - name: output version
       run: |
-        apt install git
         poetry --version
         python --version
         ls -al
