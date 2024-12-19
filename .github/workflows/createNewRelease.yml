@@ -25,4 +25,12 @@ jobs:
     - name: build project
       run: |
         poetry version patch
-        cat pyproject.toml
+        echo "git add ."
+        git add .
+        modifications=$(git status | grep "modified" || true)
+        if [ ! -z "$modifications" ]
+        then
+          echo "modifications found: $modifications"
+          git commit -m "modified project version in pyproject.toml"
+          git push
+        fi
