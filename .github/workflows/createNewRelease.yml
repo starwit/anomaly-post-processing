@@ -14,7 +14,9 @@ jobs:
     steps:
       - name: checkout project definition
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: '0'
+  
   createversion:
     name: "Create new project version"
     needs: checkout
