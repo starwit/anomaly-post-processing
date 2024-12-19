@@ -45,6 +45,8 @@ jobs:
     steps:
     - name: commit new version
       run: |
+        git config --global user.email "code@starwit.de"
+        git config --global user.name "Starwit"
         git add .
         modifications=$(git status | grep "modified" || true)
         if [ ! -z "$modifications" ]
