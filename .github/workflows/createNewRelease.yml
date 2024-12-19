@@ -3,7 +3,8 @@ name: Create new release
 on:
   workflow_dispatch:
 
-permissions: read-all
+permissions: 
+  contents: write
 
 jobs:
   build:
@@ -16,21 +17,18 @@ jobs:
     - name: checkout
       uses: actions/checkout@v4
 
-    - name: test container build
+    - name: output version
       run: |
         poetry --version
         python --version
         ls -al
 
-    - name: build project
+    - name: create new version in pyproject.toml
       run: |
         poetry version patch
-        echo "git add ."
-        git add .
-        modifications=$(git status | grep "modified" || true)
-        if [ ! -z "$modifications" ]
-        then
-          echo "modifications found: $modifications"
-          git commit -m "modified project version in pyproject.toml"
-          git push
-        fi
+
+    - name: commit new version
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: modified project version in pyproject.toml 
+
