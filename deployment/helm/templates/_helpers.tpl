@@ -72,24 +72,10 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Derive redis service name
-*/}}
-{{- define "redisServiceName" -}}
-"valkey-primary"
-{{- end }}
-
-{{/*
 Derive redis metrics service name
 */}}
 {{- define "redisMetricsServiceName" -}}
 {{- printf "%s-%s" .Release.Name "metrics-server" -}}
-{{- end }}
-
-{{/*
-Hard-code Redis service port (for now)
-*/}}
-{{- define "redisServicePort" -}}
-"6379"
 {{- end }}
 
 {{/*
@@ -104,11 +90,4 @@ Derive prometheus service name
 */}}
 {{- define "prometheusServiceName" -}}
 {{- printf "%s-%s" .Release.Name "prometheus-server" -}}
-{{- end }}
-
-{{/*
-Derive minio service name
-*/}}
-{{- define "minioEndpoint" -}}
-"minio:9000"
 {{- end }}
