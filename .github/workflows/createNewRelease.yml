@@ -55,4 +55,8 @@ jobs:
           git commit -m "modified project version" ./pyproject.toml
           git push
         fi
+      env:
+        CI: false
+        PRIVATE_REPO_USERNAME: ${{ vars.PRIVATE_REPO_USERNAME }}
+ 
 
