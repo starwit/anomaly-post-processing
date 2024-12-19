@@ -44,4 +44,13 @@ jobs:
 
     steps:
     - name: commit new version
-      run: echo "git add ."
+      run: |
+        git add .
+        modifications=$(git status | grep "modified" || true)
+        if [ ! -z "$modifications" ]
+        then
+          echo "modifications found: $modifications"
+          git commit -m "modified changelog"
+          git push
+        fi
+
