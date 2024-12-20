@@ -34,12 +34,6 @@ jobs:
       image: acidrain/python-poetry:3.11-slim-1.8.5
 
     steps:
-    - name: output version
-      run: |
-        poetry --version
-        python --version
-        ls -al
-
     - name: create new version in pyproject.toml
       run: |
         poetry version $VERSION
