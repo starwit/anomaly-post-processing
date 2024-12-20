@@ -73,7 +73,6 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         VERSION: ${{ inputs.versionChoice }}
   
-
   build:
     name: "Build and run docker image"
     needs: createversion
@@ -96,7 +95,6 @@ jobs:
       run: |
         docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomaly-post-processing:tmp .
 
-
   publish_docker:
     name: "Publish docker"
     needs: build
@@ -115,7 +113,6 @@ jobs:
         DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
         docker tag docker.internal.starwit-infra.de/anomaly-post-processing:tmp docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION
         docker push docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION
-
 
   publish_helm:
     name: "Publish helm chart"
