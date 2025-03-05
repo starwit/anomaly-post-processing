@@ -9,15 +9,15 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pydantic = "^2.0.0"
+pydantic = "^2.10.6"
 visionapi = { git = "https://github.com/starwit/vision-api.git", subdirectory = "python/visionapi", tag = "3.1.0" }
 visionlib = { git = "https://github.com/starwit/vision-lib.git", subdirectory = "python", tag = "0.10.0" }
-redis = "^5.0.0"
-pydantic-settings = "^2.0.3"
-prometheus-client = "^0.17.1"
+redis = "^5.2.1"
+pydantic-settings = "^2.8.1"
+prometheus-client = "^0.21.1"
 tomlkit = "^0.13.2"
-opencv-python = "^4.10.0.84"
-minio = "^7.2.12"
+opencv-python = "^4.11.0.86"
+minio = "^7.2.15"
 
 [build-system]
 requires = ["poetry-core"]
