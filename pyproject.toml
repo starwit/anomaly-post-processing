@@ -1,4 +1,5 @@
 [tool.poetry]
+package-mode = false
 name = "Anomaly Post Processing"
 version = "0.15.3"
 description = "This component consumes Anomalies from Valkey, save videos and sends reporting data to receivers like ai-cockpit."
@@ -9,7 +10,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 pydantic = "^2.0.0"
-visionapi = { git = "https://github.com/starwit/vision-api.git", subdirectory = "python/visionapi", tag = "3.0.0" }
+visionapi = { git = "https://github.com/starwit/vision-api.git", subdirectory = "python/visionapi", tag = "3.1.0" }
 visionlib = { git = "https://github.com/starwit/vision-lib.git", subdirectory = "python", tag = "0.10.0" }
 redis = "^5.0.0"
 pydantic-settings = "^2.0.3"
