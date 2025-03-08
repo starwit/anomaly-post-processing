@@ -25,10 +25,8 @@ jobs:
         password: ${{ secrets.DOCKER_INTERNAL_PASSWORD }}
 
     - name: build docker
-      env:
-        GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
-        docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomaly-post-processing:tmp .
+        docker build -t docker.internal.starwit-infra.de/anomaly-post-processing:tmp .
 
   publish_docker:
     name: "Build and publish docker"

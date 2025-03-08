@@ -20,7 +20,5 @@ jobs:
       uses: actions/checkout@v4
 
     - name: build docker
-      env:
-        GIT_CREDENTIALS: https://starwit:${{ secrets.VISION_PIPELINE_READ_TOKEN }}@github.com
       run: |
-        docker build --secret id=GIT_CREDENTIALS -t docker.internal.starwit-infra.de/anomaly-post-processing:tmp .
+        docker build -t docker.internal.starwit-infra.de/anomaly-post-processing:tmp .
