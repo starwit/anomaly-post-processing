@@ -12,3 +12,4 @@ redis:
   input_stream_prefix: anomalydetection
   output_stream_prefix: reportingaicockpit
 prometheus_port: 8000
+raw_frames: False

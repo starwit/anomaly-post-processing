@@ -17,12 +17,14 @@ from .config import MinioConfig
 log = logging.getLogger(__name__)
 
 def store_video(minio_config: MinioConfig, path: str, media_url: str, frames: list[JpegFrame], trajectories: list[Trajectory]):
+    timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
     seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
     framerate = len(frames) / seconds_passed
     ffmpeg_command = [
             'ffmpeg', '-f', 'image2pipe', '-r', str(framerate),
             '-vcodec', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-crf', '25',
-            '-analyzeduration', '2147483647', '-probesize', '2147483647', '-y', f'{path}/out.mp4'
+            '-analyzeduration', '2147483647', '-probesize', '2147483647', '-y', f'{path}/' + timestamp_string + '.mp4'
         ]
     
     try:
@@ -46,8 +48,6 @@ def store_video(minio_config: MinioConfig, path: str, media_url: str, frames: li
         if process.returncode == 0:
             log.info("Video conversion completed successfully.")
 
-            timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-
             client = Minio(
                 endpoint = minio_config.endpoint,
                 access_key = minio_config.user,
@@ -58,7 +58,7 @@ def store_video(minio_config: MinioConfig, path: str, media_url: str, frames: li
             client.fput_object(
                         minio_config.bucket_name,
                         media_url, 
-                        file_path = path + '/out.mp4',
+                        file_path = path + '/' + timestamp_string + '.mp4',
                         content_type='video/mp4'
                     )
         else:
@@ -91,11 +91,12 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
 
 
 def store_frames(frames: list[JpegFrame], path: str, trajectories: list[Trajectory]):
-    print(trajectories)
-    print(trajectories[0].trajectory_points)
     seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
     framerate = len(frames) / seconds_passed
 
+    timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = path + "/" + timestamp_string
+    os.mkdir(path)
     metadata_json = convert_metadata_to_json(framerate, trajectories)
     write_json_to_file(metadata_json, os.path.join(path, "metadata.json"))
     create_and_add_frames_to_zip(frames, os.path.join(path, "frames.zip"))
