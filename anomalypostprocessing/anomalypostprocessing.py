@@ -58,8 +58,9 @@ class AnomalyPostProcessing:
         output_msg.model_info.CopyFrom(input_msg.model_info)
         output_msg.timestamp_utc_ms = input_msg.jpeg_frames[0].timestamp_utc_ms
 
-        # Forward camera geo location (unset value does not need special treatment)
-        output_msg.camera_location.CopyFrom(input_msg.camera_location)
+        # Forward camera geo location
+        if input_msg.HasField('camera_location'):
+            output_msg.camera_location.CopyFrom(input_msg.camera_location)
         
         if self.isDebug:
             self._print_message(output_msg)
