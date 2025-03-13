@@ -30,7 +30,8 @@ FROM python:3.11-slim
 RUN apt update && apt install --no-install-recommends -y \
     libglib2.0-0 \
     libgl1 \
-    libturbojpeg0
+    libturbojpeg0 \
+    ffmpeg
 
 COPY --from=build /code /code
 WORKDIR /code
