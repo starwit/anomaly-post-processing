@@ -41,9 +41,9 @@ def run_stage():
 
     anomaly_post_processing = AnomalyPostProcessing(CONFIG)
 
-    consume = RedisConsumer(CONFIG.redis.host, CONFIG.redis.port, 
-                            stream_keys=[f'{CONFIG.redis.input_stream_prefix}:{CONFIG.redis.stream_id}'])
-    publish = RedisPublisher(CONFIG.redis.host, CONFIG.redis.port)
+    consume = RedisConsumer(CONFIG.redis_input.host, CONFIG.redis_input.port, 
+                            stream_keys=[f'{CONFIG.redis_input.stream_prefix}:{stream_id}' for stream_id in CONFIG.redis_input.stream_ids])
+    publish = RedisPublisher(CONFIG.redis_output.host, CONFIG.redis_output.port)
     
     with consume, publish:
         for stream_key, proto_data in consume():
@@ -53,7 +53,7 @@ def run_stage():
             if stream_key is None:
                 continue
 
-            stream_id = stream_key.split(':')[1]
+            logger.info(f'Received anomaly message from {stream_key}')
 
             FRAME_COUNTER.inc()
 
@@ -63,5 +63,5 @@ def run_stage():
                 continue
             
             with REDIS_PUBLISH_DURATION.time():
-                publish(f'{CONFIG.redis.output_stream_prefix}:{stream_id}', output_proto_data)
+                publish(f'{CONFIG.redis_output.stream_prefix}:{CONFIG.redis_output.stream_id}', output_proto_data)
             
