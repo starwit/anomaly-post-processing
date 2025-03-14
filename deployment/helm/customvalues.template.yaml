@@ -6,7 +6,14 @@ config:
   minio:
     user: minioadmin
     password: #password for minio
-  redis:
+  redis_input:
+    host: redis
+    port: 6379
+    stream_ids: 
+      - stream1
+    stream_prefix: anomalydetection
+  redis_output:
+    host: redis
+    port: 6379
     stream_id: stream1
-    input_stream_prefix: anomalydetection
-    output_stream_prefix: reportingaicockpit
+    stream_prefix: reportingaicockpit
