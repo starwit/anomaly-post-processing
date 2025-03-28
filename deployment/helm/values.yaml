@@ -9,11 +9,20 @@ config:
     endpoint: "minio:9000"
     secure: True
     bucket_name: anomalies
-  redis:
-    stream_id: stream1
-    host: valkey-primary
+  redis_input:
+    host: redis
     port: 6379
-    input_stream_prefix: anomalydetection
-    output_stream_prefix: reportingaicockpit
+    stream_ids: 
+      - stream1
+    stream_prefix: anomalydetection
+  redis_output:
+    host: redis
+    port: 6379
+    stream_id: stream1
+    stream_prefix: reportingaicockpit
   prometheus_port: 8001
 
+# If this is not set, a default pull secret is created with the credentials from .imageCredentials 
+# (and then used), otherwise it is assumed that the secrets exist
+extraImagePullSecrets: []
+# - name: pullSecretName

@@ -12,17 +12,23 @@ class MinioConfig(BaseModel):
     bucket_name: str = 'test'
     secure: bool = True
 
-class RedisConfig(BaseModel):
+class RedisInputConfig(BaseModel):
     host: str = 'localhost'
     port: Annotated[int, Field(ge=1, le=65536)] = 6379
-    stream_id: str = 'stream1'
-    input_stream_prefix: str = 'anomalydetection'
-    output_stream_prefix: str = 'reportingaicockpit'
+    stream_ids: List[str]
+    stream_prefix: str
+
+class RedisOutputConfig(BaseModel):
+    host: str = 'localhost'
+    port: Annotated[int, Field(ge=1, le=65536)] = 6379
+    stream_id: str
+    stream_prefix: str
 
 class AnomalyPostProcessingConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING
     minio: MinioConfig = MinioConfig()
-    redis: RedisConfig = RedisConfig()
+    redis_input: RedisInputConfig
+    redis_output: RedisOutputConfig
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
     raw_frames: bool = False            # store anomaly as raw frames or generate annotated video
 

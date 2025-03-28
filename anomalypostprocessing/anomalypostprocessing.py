@@ -31,7 +31,6 @@ class AnomalyPostProcessing:
     @GET_DURATION.time()
     def get(self, input_proto: bytes) -> str:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
-        logger.warning('Received anomaly message from pipeline')
         media_url = datetime.now().strftime("%Y%m%d_%H%M%S") + ".mp4"
         self._save_anomalies(anomaly_msg, "output", media_url)
         return self._create_output(anomaly_msg, media_url)
