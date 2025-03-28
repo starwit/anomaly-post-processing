@@ -17,3 +17,4 @@ redis_output:
   stream_id: stream1
   stream_prefix: reportingaicockpit
 prometheus_port: 8000
+raw_frames: False
