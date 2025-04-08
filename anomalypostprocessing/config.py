@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,7 +28,7 @@ class AnomalyPostProcessingConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING
     minio: MinioConfig = MinioConfig()
     redis_input: RedisInputConfig
-    redis_output: RedisOutputConfig
+    redis_output: Optional[RedisOutputConfig] = None
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
     raw_frames: bool = False            # store anomaly as raw frames or generate annotated video
 

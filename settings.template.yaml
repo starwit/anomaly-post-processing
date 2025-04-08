@@ -11,6 +11,7 @@ redis_input:
   stream_ids: 
     - stream1
   stream_prefix: anomalydetection
+# if redis_output is not set, it will be disabled
 redis_output:
   host: redis
   port: 6379
