@@ -11,7 +11,7 @@ redis_input:                                # Redis settings for anomaly input (
   stream_ids: 
     - stream1
   stream_prefix: anomalydetection
-raw_anomaly: False                          # If True, raw anomaly data (frames, metadata) will be added to all outputs
+raw_anomalies: False                          # If True, raw anomaly data (frames, metadata) will be added to all outputs
 redis_output:                               # Redis settings for anomaly output (disabled if not defined)
   host: redis
   port: 6379

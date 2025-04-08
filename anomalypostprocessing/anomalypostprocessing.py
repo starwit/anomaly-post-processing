@@ -4,6 +4,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from google.protobuf import text_format
 from prometheus_client import Counter, Histogram, Summary
@@ -38,7 +39,7 @@ class AnomalyPostProcessing:
     @GET_DURATION.time()
     def get(self, input_proto: bytes) -> str:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
-        anomaly_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        anomaly_id = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{uuid4().hex[:6]}'
         self._save_anomaly(anomaly_msg, anomaly_id)
         return self._create_output(anomaly_msg, anomaly_id)
         
@@ -60,7 +61,7 @@ class AnomalyPostProcessing:
             for trajectory in input_msg.trajectories:
                 self._print_message(trajectory)
         output_msg = IncidentMessage()
-        output_msg.media_url = self.config.minio.bucket_name + "/" + anomaly_id
+        output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.model_info.CopyFrom(input_msg.model_info)
         output_msg.timestamp_utc_ms = input_msg.jpeg_frames[0].timestamp_utc_ms
 
@@ -86,7 +87,7 @@ class AnomalyPostProcessing:
             temp_output_dir = Path('./output')
             os.makedirs(temp_output_dir, exist_ok=True)
             store_annotated_video(temp_output_dir / 'annotated.mp4', frames, trajectories)
-            if self.config.raw_anomaly:
+            if self.config.raw_anomalies:
                 store_raw(temp_output_dir, frames, trajectories)
 
             # Copy output artifacts to local storage

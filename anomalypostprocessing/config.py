@@ -35,7 +35,7 @@ class AnomalyPostProcessingConfig(BaseSettings):
     redis_input: RedisInputConfig
     redis_output: Optional[RedisOutputConfig] = None
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
-    raw_anomaly: bool = False                                                     # store anomaly as raw frames plus metadata and annotated video (otherwise just annotated video)
+    raw_anomalies: bool = False                                                     # store anomaly as raw frames plus metadata and annotated video (otherwise just annotated video)
     local_output: Optional[LocalOutputConfig] = None                              # store anomalies into file system 
 
     model_config = SettingsConfigDict(env_nested_delimiter='__')
