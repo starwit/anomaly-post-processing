@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import signal
 import threading
@@ -6,8 +7,8 @@ from prometheus_client import Counter, Histogram, start_http_server
 from visionlib.pipeline.consumer import RedisConsumer
 from visionlib.pipeline.publisher import RedisPublisher
 
-from .config import AnomalyPostProcessingConfig
 from .anomalypostprocessing import AnomalyPostProcessing
+from .config import AnomalyPostProcessingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ def run_stage():
 
     consume = RedisConsumer(CONFIG.redis_input.host, CONFIG.redis_input.port, 
                             stream_keys=[f'{CONFIG.redis_input.stream_prefix}:{stream_id}' for stream_id in CONFIG.redis_input.stream_ids])
-    publish = RedisPublisher(CONFIG.redis_output.host, CONFIG.redis_output.port)
+    publish = RedisPublisher(CONFIG.redis_output.host, CONFIG.redis_output.port) if CONFIG.redis_output is not None else contextlib.nullcontext()
     
     with consume, publish:
         for stream_key, proto_data in consume():
@@ -59,7 +60,7 @@ def run_stage():
 
             output_proto_data = anomaly_post_processing.get(proto_data)
 
-            if output_proto_data is None:
+            if output_proto_data is None or CONFIG.redis_output is None:
                 continue
             
             with REDIS_PUBLISH_DURATION.time():
