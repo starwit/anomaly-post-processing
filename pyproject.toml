@@ -1,7 +1,7 @@
 [tool.poetry]
 package-mode = false
 name = "Anomaly Post Processing"
-version = "1.0.1"
+version = "2.0.0"
 description = "This component consumes Anomalies from Valkey, save videos and sends reporting data to receivers like ai-cockpit."
 authors = ["witchpou <anett.huebner@starwit.de>"]
 license = "AGPLv3"
