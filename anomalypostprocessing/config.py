@@ -1,9 +1,11 @@
-from typing import List, Optional
+import pathlib
+from typing import List, Optional, Optional
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
 from visionlib.pipeline.settings import LogLevel, YamlConfigSettingsSource
+
 
 class MinioConfig(BaseModel):
     endpoint: str = 'localhost:9000'
@@ -24,13 +26,17 @@ class RedisOutputConfig(BaseModel):
     stream_id: str
     stream_prefix: str
 
+class LocalOutputConfig(BaseModel):
+    path: pathlib.Path
+
 class AnomalyPostProcessingConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING
-    minio: MinioConfig = MinioConfig()
+    minio: Optional[MinioConfig] = None
     redis_input: RedisInputConfig
     redis_output: Optional[RedisOutputConfig] = None
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
-    raw_frames: bool = False            # store anomaly as raw frames or generate annotated video
+    raw_anomalies: bool = False                                                     # store anomaly as raw frames plus metadata and annotated video (otherwise just annotated video)
+    local_output: Optional[LocalOutputConfig] = None                              # store anomalies into file system 
 
     model_config = SettingsConfigDict(env_nested_delimiter='__')
 

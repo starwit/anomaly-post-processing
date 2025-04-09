@@ -1,10 +1,9 @@
 import json
 import logging
-import os
 import subprocess
 import time
 import zipfile
-from datetime import datetime
+from pathlib import Path
 from zlib import crc32
 
 import cv2
@@ -16,21 +15,17 @@ from .config import MinioConfig
 
 log = logging.getLogger(__name__)
 
-def store_video(minio_config: MinioConfig, path: str, media_url: str, frames: list[JpegFrame], trajectories: list[Trajectory]):
-    #timestamp_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+def store_annotated_video(output_file: Path, frames: list[JpegFrame], trajectories: list[Trajectory]) -> None:
     seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
     framerate = len(frames) / seconds_passed
     ffmpeg_command = [
             'ffmpeg', '-f', 'image2pipe', '-r', str(framerate),
             '-vcodec', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-crf', '25',
-            '-analyzeduration', '2147483647', '-probesize', '2147483647', '-y', f'{path}/' + 'anomaly.mp4'
+            '-analyzeduration', '2147483647', '-probesize', '2147483647', '-y', output_file.resolve()
         ]
     
     try:
         process = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        #tracks_unusual_movement = filter_relevant_tracks(tracks, anomalies)
-        #tracks_dict = transform_trajectory_info(trajectories)
         start_time_millis = time.time() * 1000
         try:
             for frame in frames:
@@ -39,32 +34,43 @@ def store_video(minio_config: MinioConfig, path: str, media_url: str, frames: li
                 process.stdin.flush()
             log.debug("Average time per frame: " + str((time.time() * 1000 - start_time_millis) / len(frames)))
         except Exception as ex:
-            log.error("Could not create video from frames")
+            log.error("Writing to ffmpeg process failed")
             log.error(str(ex))
             log.error(process.stderr.read().decode())
 
         process.communicate()
 
         if process.returncode == 0:
-            log.info("Video conversion completed successfully.")
-
-            client = Minio(
-                endpoint = minio_config.endpoint,
-                access_key = minio_config.user,
-                secret_key = minio_config.password,
-                secure = minio_config.secure
-            )
-
-            client.fput_object(
-                        minio_config.bucket_name,
-                        media_url, 
-                        file_path = path + '/anomaly.mp4',
-                        content_type='video/mp4'
-                    )
+            log.info(f"Video conversion completed successfully ({output_file.resolve()})")
         else:
-            log.error("Video conversion failed.")
+            raise IOError(f"Video conversion failed with return code {process.returncode}.")
     except (IOError, subprocess.SubprocessError) as e:
-        print(e)
+        raise IOError(f"Could not create video from frames") from e
+
+def save_file_to_minio(minio_config: MinioConfig, file_path: str, object_name: str) -> None:
+    client = Minio(
+        endpoint=minio_config.endpoint,
+        access_key=minio_config.user,
+        secret_key=minio_config.password,
+        secure=minio_config.secure
+    )
+
+    # Determine content type based on file extension
+    content_type = {
+        '.zip': 'application/zip',
+        '.mp4': 'video/mp4',
+        '.json': 'application/json',
+    }.get(Path(file_path).suffix, 'application/octet-stream')
+
+    try:
+        client.fput_object(
+            minio_config.bucket_name,
+            object_name, 
+            file_path=file_path,
+            content_type=content_type
+        )
+    except Exception as e:
+        raise IOError(f"Could not upload file {file_path} to MinIO") from e
 
 def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory]) -> bytes:
     center_points = []
@@ -90,15 +96,16 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
     return encoded_img.tobytes()
 
 
-def store_frames(frames: list[JpegFrame], path: str, trajectories: list[Trajectory]):
-    seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
-    framerate = len(frames) / seconds_passed
+def store_raw(output_directory: Path, frames: list[JpegFrame], trajectories: list[Trajectory]):
+    segment_length = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
+    framerate = len(frames) / segment_length
 
-    path = path + "/anomaly" 
-    os.mkdir(path)
+    if not output_directory.exists() or not output_directory.is_dir():
+        raise IOError(f"Directory {output_directory} does not exist")
+
     metadata_json = convert_metadata_to_json(framerate, trajectories)
-    write_json_to_file(metadata_json, os.path.join(path, "metadata.json"))
-    create_and_add_frames_to_zip(frames, os.path.join(path, "frames.zip"))
+    write_json_to_file(metadata_json, output_directory / "metadata.json")
+    create_and_add_frames_to_zip(frames, output_directory / "frames.zip")
 
 
 def convert_metadata_to_json(framerate: float, trajectories: list[Trajectory]):
@@ -132,9 +139,8 @@ def write_json_to_file(json_data: dict, file_path: str):
     try:
         with open(file_path, 'w') as file_writer:
             json.dump(json_data, file_writer, indent=2)
-    except IOError as e:
-        print(f"Could not store JSON file {file_path}")
-        print(e)
+    except Exception as e:
+        raise IOError(f"Could not write metadata to file {file_path}") from e
 
 
 def create_and_add_frames_to_zip(frames: list[JpegFrame], zip_file_path: str):
@@ -152,6 +158,5 @@ def create_and_add_frames_to_zip(frames: list[JpegFrame], zip_file_path: str):
                 zip_info.CRC = crc
 
                 zip_output_stream.writestr(zip_info, data)
-    except IOError as e:
-        print(f"Could not store frames in zip-file {zip_file_path}")
-        print(e)
+    except Exception as e:
+        raise IOError(f"Could not create zip file {zip_file_path}") from e

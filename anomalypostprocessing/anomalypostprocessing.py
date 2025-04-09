@@ -1,12 +1,20 @@
 import logging
 import os
-from typing import Any, Dict, NamedTuple
+import shutil
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
+
+from google.protobuf import text_format
 from prometheus_client import Counter, Histogram, Summary
 from visionapi.anomaly_pb2 import AnomalyMessage
 from visionapi.reporting_pb2 import IncidentMessage
-from google.protobuf import text_format
-from anomalypostprocessing.storeoutput import store_frames, store_video
+
+from anomalypostprocessing.storeoutput import (save_file_to_minio,
+                                               store_annotated_video,
+                                               store_raw)
+
 from .config import AnomalyPostProcessingConfig
 
 logging.basicConfig(format='%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s')
@@ -31,9 +39,9 @@ class AnomalyPostProcessing:
     @GET_DURATION.time()
     def get(self, input_proto: bytes) -> str:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
-        media_url = datetime.now().strftime("%Y%m%d_%H%M%S") + ".mp4"
-        self._save_anomalies(anomaly_msg, "output", media_url)
-        return self._create_output(anomaly_msg, media_url)
+        anomaly_id = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{uuid4().hex[:6]}'
+        self._save_anomaly(anomaly_msg, anomaly_id)
+        return self._create_output(anomaly_msg, anomaly_id)
         
     @PROTO_DESERIALIZATION_DURATION.time()
     def _unpack_proto(self, message_bytes: bytes) -> AnomalyMessage:
@@ -48,12 +56,12 @@ class AnomalyPostProcessing:
         return anomaly_msg.SerializeToString()
     
     @PROTO_SERIALIZATION_DURATION.time()
-    def _create_output(self, input_msg: AnomalyMessage, media_url: str) -> bytes:
+    def _create_output(self, input_msg: AnomalyMessage, anomaly_id: str) -> bytes:
         if self.isDebug:
             for trajectory in input_msg.trajectories:
                 self._print_message(trajectory)
         output_msg = IncidentMessage()
-        output_msg.media_url = self.config.minio.bucket_name + "/" + media_url
+        output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.model_info.CopyFrom(input_msg.model_info)
         output_msg.timestamp_utc_ms = input_msg.jpeg_frames[0].timestamp_utc_ms
 
@@ -65,22 +73,38 @@ class AnomalyPostProcessing:
             self._print_message(output_msg)
         return output_msg.SerializeToString()
 
-    def _save_anomalies(self, input_msg: AnomalyMessage, path: str, media_url: str):
+    def _save_anomaly(self, input_msg: AnomalyMessage, anomaly_id: str):
+        frames = input_msg.jpeg_frames
+        if len(frames) < 2: 
+            return
+        
         trajectories = input_msg.trajectories
-        minio_config = self.config.minio
-
         if len(trajectories) == 0: 
             return
 
-        os.makedirs(path, exist_ok=True)
-        frames = input_msg.jpeg_frames
-        if len(frames) < 2: return
+        try:
+            # Create a temporary directory and store all necessary output artifacts
+            temp_output_dir = Path('./output')
+            os.makedirs(temp_output_dir, exist_ok=True)
+            store_annotated_video(temp_output_dir / 'annotated.mp4', frames, trajectories)
+            if self.config.raw_anomalies:
+                store_raw(temp_output_dir, frames, trajectories)
 
-        if self.config.raw_frames:
-            store_frames(frames, path, trajectories)
-        else:
-            store_video(minio_config, path, media_url, frames, trajectories)
-  
+            # Copy output artifacts to local storage
+            if self.config.local_output is not None:
+                shutil.copytree(temp_output_dir, self.config.local_output.path / anomaly_id, dirs_exist_ok=True)
+            
+            # Upload output artifacts to MinIO
+            if self.config.minio:
+                for file in temp_output_dir.iterdir():
+                    object_name = f"{anomaly_id}/{file.name}"
+                    save_file_to_minio(self.config.minio, file, object_name)
+        except Exception as e:
+            logger.error(f"Error saving anomaly: {e}")
+
+        # Clean up
+        shutil.rmtree(temp_output_dir, ignore_errors=True)
+        
     def _print_message(self, msg: Any):
         if not os.path.exists('target'):
             os.makedirs('target')
