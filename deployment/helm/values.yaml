@@ -22,7 +22,6 @@ config:
     stream_prefix: reportingaicockpit
   prometheus_port: 8001
 
-# If this is not set, a default pull secret is created with the credentials from .imageCredentials 
+# If this is not set or empty, a default pull secret is created with the credentials from .imageCredentials 
 # (and then used), otherwise it is assumed that the secrets exist
-extraImagePullSecrets: []
-# - name: pullSecretName
+existingPullSecret: ""
