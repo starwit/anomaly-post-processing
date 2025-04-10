@@ -1,9 +1,10 @@
 nameOverride: "anomaly-post-processing"
 fullnameOverride: "anomaly-post-processing"
+
 image:
   repository: docker.internal.starwit-infra.de/anomaly-post-processing
 
-
+# This section is used verbatim as the settings.yaml for the anomaly-post-processing service (see settings.template.yaml for options)
 config:
   minio:
     endpoint: "minio:9000"
