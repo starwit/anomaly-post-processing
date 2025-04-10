@@ -1,9 +1,9 @@
 nameOverride: "anomaly-post-processing"
 fullnameOverride: "anomaly-post-processing"
-imageCredentials:
-  registry: docker.internal.starwit-infra.de
 image:
   repository: docker.internal.starwit-infra.de/anomaly-post-processing
+
+
 config:
   minio:
     endpoint: "minio:9000"
@@ -22,6 +22,12 @@ config:
     stream_prefix: reportingaicockpit
   prometheus_port: 8001
 
-# If this is not set or empty, a default pull secret is created with the credentials from .imageCredentials 
+# If this is not set or empty, a default pull secret is created with the credentials from .pullSecret 
 # (and then used), otherwise it is assumed that the secrets exist
 existingPullSecret: ""
+
+# if .existingPullSecret is not set, this is used to create the default secret, otherwise it will be ignored
+pullSecret:
+  registry: docker.internal.starwit-infra.de
+  username: docker
+  password: "" # password to set
