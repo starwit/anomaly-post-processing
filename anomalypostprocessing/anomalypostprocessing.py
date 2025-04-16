@@ -10,7 +10,7 @@ from google.protobuf import text_format
 from prometheus_client import Counter, Histogram, Summary
 from visionapi.anomaly_pb2 import AnomalyMessage
 from visionapi.reporting_pb2 import IncidentMessage
-
+from starwit_aic_api.models.decision import Decision
 from anomalypostprocessing.storeoutput import (save_file_to_minio,
                                                store_annotated_video,
                                                store_raw)
