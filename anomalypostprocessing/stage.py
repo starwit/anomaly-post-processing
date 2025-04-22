@@ -2,6 +2,7 @@ import contextlib
 import logging
 import signal
 import threading
+import requests
 
 from prometheus_client import Counter, Histogram, start_http_server
 from visionlib.pipeline.consumer import RedisConsumer
@@ -44,9 +45,11 @@ def run_stage():
 
     consume = RedisConsumer(CONFIG.redis_input.host, CONFIG.redis_input.port, 
                             stream_keys=[f'{CONFIG.redis_input.stream_prefix}:{stream_id}' for stream_id in CONFIG.redis_input.stream_ids])
-    publish = RedisPublisher(CONFIG.redis_output.host, CONFIG.redis_output.port) if CONFIG.redis_output is not None else contextlib.nullcontext()
     
-    with consume, publish:
+    if (CONFIG.redis_output.enabled):
+        publish = RedisPublisher(CONFIG.redis_output.host, CONFIG.redis_output.port) if CONFIG.redis_output is not None else contextlib.nullcontext()
+    
+    with consume:
         for stream_key, proto_data in consume():
             if stop_event.is_set():
                 break
@@ -63,6 +66,10 @@ def run_stage():
             if output_proto_data is None or CONFIG.redis_output is None:
                 continue
             
-            with REDIS_PUBLISH_DURATION.time():
-                publish(f'{CONFIG.redis_output.stream_prefix}:{CONFIG.redis_output.stream_id}', output_proto_data)
-            
+            if (CONFIG.redis_output.enabled):
+                with publish:
+                    with REDIS_PUBLISH_DURATION.time():
+                        publish(f'{CONFIG.redis_output.stream_prefix}:{CONFIG.redis_output.stream_id}', output_proto_data)
+                        
+            if (CONFIG.http_sender.enabled):
+                requests.post(CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint, json = output_proto_data)

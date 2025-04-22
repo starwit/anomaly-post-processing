@@ -1,2 +1,5 @@
 [virtualenvs]
 in-project = true
+
+[project]
+dynamic = ["dependencies"]

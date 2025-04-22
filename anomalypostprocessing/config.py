@@ -21,10 +21,16 @@ class RedisInputConfig(BaseModel):
     stream_prefix: str
 
 class RedisOutputConfig(BaseModel):
+    enabled: bool = False
     host: str = 'localhost'
     port: Annotated[int, Field(ge=1, le=65536)] = 6379
     stream_id: str
     stream_prefix: str
+    
+class HttpSenderConfig(BaseModel):
+    enabled: bool = True
+    applicationUrl: str = 'localhost:8081/ai-cockpit'
+    endpoint: str = '/api/decision'
 
 class LocalOutputConfig(BaseModel):
     path: pathlib.Path
@@ -34,6 +40,7 @@ class AnomalyPostProcessingConfig(BaseSettings):
     minio: Optional[MinioConfig] = None
     redis_input: RedisInputConfig
     redis_output: Optional[RedisOutputConfig] = None
+    http_sender: Optional[HttpSenderConfig] = None
     prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
     raw_anomalies: bool = False                                                     # store anomaly as raw frames plus metadata and annotated video (otherwise just annotated video)
     local_output: Optional[LocalOutputConfig] = None                              # store anomalies into file system 

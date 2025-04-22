@@ -13,11 +13,16 @@ redis_input:                                # Redis settings for anomaly input (
   stream_prefix: anomalydetection
 raw_anomalies: False                          # If True, raw anomaly data (frames, metadata) will be added to all outputs
 redis_output:                               # Redis settings for anomaly output (disabled if not defined)
+  enabled: False
   host: redis
   port: 6379
   stream_id: stream1
   stream_prefix: reportingaicockpit
 # local_output:                             # Local file output settings (disabled if not defined)
 #   path: /tmp/anomalydetection
+http_sender:
+  enabled: True
+  applicationUrl: localhost:8081/ai-cockpit/
+  entpoint: api/decision
 prometheus_port: 8000
 

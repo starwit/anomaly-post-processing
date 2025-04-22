@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -41,7 +42,11 @@ class AnomalyPostProcessing:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
         anomaly_id = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{uuid4().hex[:6]}'
         self._save_anomaly(anomaly_msg, anomaly_id)
-        return self._create_output(anomaly_msg, anomaly_id)
+        if (self.config.redis_input.enabled) :
+            return self._create_redis_output(anomaly_msg, anomaly_id)
+        else:
+            return self._create_decision_output(anomaly_msg, anomaly_id)
+        
         
     @PROTO_DESERIALIZATION_DURATION.time()
     def _unpack_proto(self, message_bytes: bytes) -> AnomalyMessage:
@@ -56,10 +61,7 @@ class AnomalyPostProcessing:
         return anomaly_msg.SerializeToString()
     
     @PROTO_SERIALIZATION_DURATION.time()
-    def _create_output(self, input_msg: AnomalyMessage, anomaly_id: str) -> bytes:
-        if self.isDebug:
-            for trajectory in input_msg.trajectories:
-                self._print_message(trajectory)
+    def _create_redis_output(self, input_msg: AnomalyMessage, anomaly_id: str) -> bytes:                             
         output_msg = IncidentMessage()
         output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.model_info.CopyFrom(input_msg.model_info)
@@ -72,6 +74,22 @@ class AnomalyPostProcessing:
         if self.isDebug:
             self._print_message(output_msg)
         return output_msg.SerializeToString()
+    
+    def _create_decision_output(self, input_msg: AnomalyMessage, anomaly_id: str) -> bytes:
+        output_msg = Decision()
+        output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
+        output_msg.module.name = input_msg.model_info.name
+        output_msg.acquisition_time = input_msg.jpeg_frames[0].timestamp_utc_ms
+
+        # Forward camera geo location
+        if input_msg.HasField('camera_location'):
+            output_msg.camera_latitude = input_msg.camera_location.latitude
+            output_msg.camera_longitude = input_msg.camera_location.longitude
+        
+        if self.isDebug:
+            self._print_message(output_msg)
+        return json.dumps(output_msg)
+    
 
     def _save_anomaly(self, input_msg: AnomalyMessage, anomaly_id: str):
         frames = input_msg.jpeg_frames
@@ -104,6 +122,10 @@ class AnomalyPostProcessing:
 
         # Clean up
         shutil.rmtree(temp_output_dir, ignore_errors=True)
+        
+        if self.isDebug:
+            for trajectory in input_msg.trajectories:
+                self._print_message(trajectory)
         
     def _print_message(self, msg: Any):
         if not os.path.exists('target'):
