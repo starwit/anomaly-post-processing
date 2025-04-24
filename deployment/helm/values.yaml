@@ -22,6 +22,8 @@ config:
     stream_id: stream1
     stream_prefix: reportingaicockpit
   prometheus_port: 8001
+  # local_output:                            # Uncomment to enable local output (do not change the path, it is where the PV is mounted)
+  #   path: /anomaly-data
 
 # If this is not set or empty, a default pull secret is created with the credentials from .pullSecret 
 # (and then used), otherwise it is assumed that the secrets exist
