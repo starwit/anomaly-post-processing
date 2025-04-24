@@ -6,7 +6,7 @@ minio:                                      # MinIO settings for anomaly output 
   secure: True
   bucket_name: test
 redis_input:                                # Redis settings for anomaly input (mandatory)
-  host: redis
+  host: localhost
   port: 6379
   stream_ids: 
     - stream1
@@ -14,7 +14,7 @@ redis_input:                                # Redis settings for anomaly input (
 raw_anomalies: False                          # If True, raw anomaly data (frames, metadata) will be added to all outputs
 redis_output:                               # Redis settings for anomaly output (disabled if not defined)
   enabled: False
-  host: redis
+  host: localhost
   port: 6379
   stream_id: stream1
   stream_prefix: reportingaicockpit

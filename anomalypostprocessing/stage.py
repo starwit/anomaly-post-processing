@@ -10,6 +10,7 @@ from visionlib.pipeline.publisher import RedisPublisher
 
 from .anomalypostprocessing import AnomalyPostProcessing
 from .config import AnomalyPostProcessingConfig
+from requests.exceptions import HTTPError, Timeout, RequestException
 
 logger = logging.getLogger(__name__)
 
@@ -72,4 +73,17 @@ def run_stage():
                         publish(f'{CONFIG.redis_output.stream_prefix}:{CONFIG.redis_output.stream_id}', output_proto_data)
                         
             if (CONFIG.http_sender.enabled):
-                requests.post(CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint, json = output_proto_data)
+                logger.info(f"Send decisions to cockpit: {CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint}")
+                try:
+                    response = requests.post(CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint, data = output_proto_data, headers={"Content-Type": "application/json"})
+                    # Check if the request was successful
+                    if response.status_code != 200:
+                        logger.info(f"Request failed with status code: {response.status_code}")
+                except Timeout:
+                    logger.info("The request timed out.")
+                except HTTPError as http_err:
+                    logger.info(f"HTTP error occurred: {http_err}")
+                except RequestException as req_err:
+                    logger.info(f"Request error occurred: {req_err}")
+                except Exception as err:
+                    logger.info(f"An unexpected error occurred: {err}")

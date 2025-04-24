@@ -17,6 +17,7 @@ from anomalypostprocessing.storeoutput import (save_file_to_minio,
                                                store_raw)
 
 from .config import AnomalyPostProcessingConfig
+from starwit_aic_api.models.module import Module
 
 logging.basicConfig(format='%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s')
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class AnomalyPostProcessing:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
         anomaly_id = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{uuid4().hex[:6]}'
         self._save_anomaly(anomaly_msg, anomaly_id)
-        if (self.config.redis_input.enabled) :
+        if (self.config.redis_output.enabled) :
             return self._create_redis_output(anomaly_msg, anomaly_id)
         else:
             return self._create_decision_output(anomaly_msg, anomaly_id)
@@ -78,6 +79,7 @@ class AnomalyPostProcessing:
     def _create_decision_output(self, input_msg: AnomalyMessage, anomaly_id: str) -> bytes:
         output_msg = Decision()
         output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
+        output_msg.module = Module()
         output_msg.module.name = input_msg.model_info.name
         output_msg.acquisition_time = input_msg.jpeg_frames[0].timestamp_utc_ms
 
@@ -88,8 +90,24 @@ class AnomalyPostProcessing:
         
         if self.isDebug:
             self._print_message(output_msg)
-        return json.dumps(output_msg)
-    
+        
+        # type: ingore
+        return output_msg.model_dump_json(by_alias=True, include={
+            "acquisition_time": ...,
+            "media_url": ...,
+            "action_visualization_url": ...,
+            "camera_latitude": ...,
+            "camera_longitude": ...,
+            "description": ...,
+            "module": {
+                "id": ...,
+                "name": ...
+            },
+            "decision_type": {
+                "id": ...,
+                "name": ...
+            }
+        })
 
     def _save_anomaly(self, input_msg: AnomalyMessage, anomaly_id: str):
         frames = input_msg.jpeg_frames
@@ -132,5 +150,5 @@ class AnomalyPostProcessing:
             os.makedirs('target')
         f = open('target/log.txt', 'a')
         f.write("++++++ new " + str(msg.__class__) + " +++++++++++")
-        f.write(text_format.MessageToString(msg))
+        f.write(msg.__str__())
         f.close()

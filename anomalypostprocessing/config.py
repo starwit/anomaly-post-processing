@@ -29,9 +29,8 @@ class RedisOutputConfig(BaseModel):
     
 class HttpSenderConfig(BaseModel):
     enabled: bool = True
-    applicationUrl: str = 'localhost:8081/ai-cockpit'
-    endpoint: str = '/api/decision'
-
+    applicationUrl: str
+    endpoint: str
 class LocalOutputConfig(BaseModel):
     path: pathlib.Path
 
