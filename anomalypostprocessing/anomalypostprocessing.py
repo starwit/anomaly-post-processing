@@ -41,7 +41,11 @@ class AnomalyPostProcessing:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
         anomaly_id = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{uuid4().hex[:6]}'
         self._save_anomaly(anomaly_msg, anomaly_id)
-        return self._create_output(anomaly_msg, anomaly_id)
+
+        if self.config.redis_output and self.config.minio:
+            return self._create_output(anomaly_msg, anomaly_id)
+        else:
+            return None
         
     @PROTO_DESERIALIZATION_DURATION.time()
     def _unpack_proto(self, message_bytes: bytes) -> AnomalyMessage:
