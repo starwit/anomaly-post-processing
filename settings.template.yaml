@@ -23,6 +23,6 @@ redis_output:                               # Redis settings for anomaly output 
 http_sender:
   enabled: True
   applicationUrl: localhost:8081/ai-cockpit/
-  entpoint: api/decision
+  endpoint: api/decision
 prometheus_port: 8000
 
