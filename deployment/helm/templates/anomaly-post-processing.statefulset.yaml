@@ -15,12 +15,11 @@ spec:
     metadata:
       annotations:
         starwit.de/stage: anomaly-post-processing
+        starwit.de/config-checksum: {{ include (print $.Template.BasePath "/anomaly-post-processing.configmap.yaml") $ | sha256sum }}
       labels:
         {{- include "selectorLabels" $ | nindent 8 }}
         app.kubernetes.io/component: {{ include "fullname" $ }}
     spec:
-      imagePullSecrets:
-        - name: internal-docker-registry
       serviceAccountName: {{ include "serviceAccountName" $ }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
@@ -37,10 +36,19 @@ spec:
             - name: config
               mountPath: /code/settings.yaml
               subPath: settings.yaml
+            {{- if $.Values.config.local_output }}
+            - name: anomaly-data
+              mountPath: /anomaly-data
+            {{- end }}
       volumes:
         - name: config
           configMap:
             name: anomaly-post-processing-config
+        {{- if $.Values.config.local_output }}
+        - name: anomaly-data
+          persistentVolumeClaim:
+            claimName: {{ include "fullname" $ }}-anomaly-data
+        {{- end }}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

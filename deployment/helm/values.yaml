@@ -1,9 +1,10 @@
 nameOverride: "anomaly-post-processing"
 fullnameOverride: "anomaly-post-processing"
-imageCredentials:
-  registry: docker.internal.starwit-infra.de
+
 image:
   repository: docker.internal.starwit-infra.de/anomaly-post-processing
+
+# This section is used verbatim as the settings.yaml for the anomaly-post-processing service (see settings.template.yaml for options)
 config:
   minio:
     endpoint: "minio:9000"
@@ -26,8 +27,15 @@ config:
     applicationUrl: http://localhost:8081
     endpoint: /api/aic/decision
   prometheus_port: 8001
+  # local_output:                            # Uncomment to enable local output (do not change the path, it is where the PV is mounted)
+  #   path: /anomaly-data
 
-# If this is not set, a default pull secret is created with the credentials from .imageCredentials 
+# If this is not set or empty, a default pull secret is created with the credentials from .pullSecret 
 # (and then used), otherwise it is assumed that the secrets exist
-extraImagePullSecrets: []
-# - name: pullSecretName
+existingPullSecret: ""
+
+# if .existingPullSecret is not set, this is used to create the default secret, otherwise it will be ignored
+pullSecret:
+  registry: docker.internal.starwit-infra.de
+  username: docker
+  password: "" # password to set
