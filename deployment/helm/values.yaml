@@ -17,10 +17,15 @@ config:
       - stream1
     stream_prefix: anomalydetection
   redis_output:
+    enabled: True
     host: redis
     port: 6379
     stream_id: stream1
     stream_prefix: reportingaicockpit
+  http_sender:
+    enabled: False
+    applicationUrl: http://localhost:8081
+    endpoint: /api/aic/decision
   prometheus_port: 8001
   # local_output:                            # Uncomment to enable local output (do not change the path, it is where the PV is mounted)
   #   path: /anomaly-data
