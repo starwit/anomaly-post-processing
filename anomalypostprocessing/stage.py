@@ -47,7 +47,7 @@ def run_stage():
     consume = RedisConsumer(CONFIG.redis_input.host, CONFIG.redis_input.port, 
                             stream_keys=[f'{CONFIG.redis_input.stream_prefix}:{stream_id}' for stream_id in CONFIG.redis_input.stream_ids])
     
-    if (CONFIG.redis_output.enabled):
+    if CONFIG.redis_output:
         publish = RedisPublisher(CONFIG.redis_output.host, CONFIG.redis_output.port) if CONFIG.redis_output is not None else contextlib.nullcontext()
     
     with consume:
@@ -64,26 +64,46 @@ def run_stage():
 
             output_proto_data = anomaly_post_processing.get(proto_data)
 
-            if output_proto_data is None or CONFIG.redis_output is None:
-                continue
-            
-            if (CONFIG.redis_output.enabled):
+            if CONFIG.redis_output:
                 with publish:
                     with REDIS_PUBLISH_DURATION.time():
                         publish(f'{CONFIG.redis_output.stream_prefix}:{CONFIG.redis_output.stream_id}', output_proto_data)
                         
-            if (CONFIG.http_sender.enabled):
-                logger.info(f"Send decisions to cockpit: {CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint}")
+            if CONFIG.http_sender:
+                logger.info(f"Sending decisions to cockpit: {CONFIG.http_sender.target_endpoint}")
                 try:
-                    response = requests.post(CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint, data = output_proto_data, headers={"Content-Type": "application/json"})
-                    # Check if the request was successful
-                    if response.status_code != 200:
-                        logger.info(f"Request failed with status code: {response.status_code}")
+                    if CONFIG.http_sender.auth:
+                        # Get an access token if auth is configured
+                        token = requests.post(
+                            CONFIG.http_sender.auth.token_endpoint_url,
+                            data={
+                                'client_id': CONFIG.http_sender.auth.client_id,
+                                'username': CONFIG.http_sender.auth.username,
+                                'password': CONFIG.http_sender.auth.password,
+                                'grant_type': 'password',
+                            }
+                        ).json().get('access_token')
+                        headers = {
+                            "Authorization": f"Bearer {token}",
+                            "Content-Type": "application/json"
+                        }
+                    else:
+                        headers = {"Content-Type": "application/json"}
+                    
+                    # Send the actual request
+                    response = requests.post(
+                        CONFIG.http_sender.target_endpoint, 
+                        data=output_proto_data,
+                        headers=headers,
+                        timeout=CONFIG.http_sender.timeout,
+                    )
+                    response.raise_for_status()
                 except Timeout:
-                    logger.info("The request timed out.")
+                    logger.error("The request timed out.")
                 except HTTPError as http_err:
-                    logger.info(f"HTTP error occurred: {http_err}")
+                    logger.error(f"Request failed with status code: {http_err.response.status_code}")
+                    logger.error(f"Response content: {http_err.response.content}")
                 except RequestException as req_err:
-                    logger.info(f"Request error occurred: {req_err}")
+                    logger.error(f"Request error occurred: {req_err}")
                 except Exception as err:
-                    logger.info(f"An unexpected error occurred: {err}")
+                    logger.error(f"An unexpected error occurred: {err}")

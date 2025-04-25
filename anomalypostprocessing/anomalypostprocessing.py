@@ -43,9 +43,9 @@ class AnomalyPostProcessing:
         anomaly_msg: AnomalyMessage = self._unpack_proto(input_proto)
         anomaly_id = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}_{uuid4().hex[:6]}'
         self._save_anomaly(anomaly_msg, anomaly_id)
-        if self.config.redis_output.enabled:
+        if self.config.redis_output:
             return self._create_redis_output(anomaly_msg, anomaly_id)
-        elif self.config.http_sender.enabled:
+        elif self.config.http_sender:
             return self._create_decision_output(anomaly_msg, anomaly_id)
         else:
             return None
@@ -65,7 +65,7 @@ class AnomalyPostProcessing:
     @PROTO_SERIALIZATION_DURATION.time()
     def _create_redis_output(self, input_msg: AnomalyMessage, anomaly_id: str) -> bytes:                             
         output_msg = IncidentMessage()
-        output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
+        # output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.model_info.CopyFrom(input_msg.model_info)
         output_msg.timestamp_utc_ms = input_msg.jpeg_frames[0].timestamp_utc_ms
 
@@ -79,7 +79,7 @@ class AnomalyPostProcessing:
     
     def _create_decision_output(self, input_msg: AnomalyMessage, anomaly_id: str) -> bytes:
         output_msg = Decision()
-        output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
+        # output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.module = Module()
         output_msg.module.name = input_msg.model_info.name
         output_msg.acquisition_time = input_msg.jpeg_frames[0].timestamp_utc_ms

@@ -1,18 +1,18 @@
 import pathlib
 from typing import List, Optional, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
 from visionlib.pipeline.settings import LogLevel, YamlConfigSettingsSource
 
 
 class MinioConfig(BaseModel):
-    endpoint: str = 'localhost:9000'
-    user: str = 'test'
-    password: str = 'test'
-    bucket_name: str = 'test'
-    secure: bool = True
+    endpoint: str
+    user: str
+    password: str
+    bucket_name: str
+    secure: bool
 
 class RedisInputConfig(BaseModel):
     host: str = 'localhost'
@@ -21,16 +21,22 @@ class RedisInputConfig(BaseModel):
     stream_prefix: str
 
 class RedisOutputConfig(BaseModel):
-    enabled: bool = False
     host: str = 'localhost'
     port: Annotated[int, Field(ge=1, le=65536)] = 6379
     stream_id: str
     stream_prefix: str
-    
+
+class AuthConfig(BaseModel):
+    token_endpoint_url: AnyHttpUrl
+    client_id: str
+    username: str
+    password: str
+
 class HttpSenderConfig(BaseModel):
-    enabled: bool = True
-    applicationUrl: str
-    endpoint: str
+    target_endpoint: AnyHttpUrl
+    timeout: Annotated[int, Field(ge=0)] = 5
+    auth: Optional[AuthConfig] = None
+
 class LocalOutputConfig(BaseModel):
     path: pathlib.Path
 
