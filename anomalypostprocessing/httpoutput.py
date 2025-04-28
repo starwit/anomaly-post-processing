@@ -2,7 +2,7 @@ import logging
 
 import requests
 from requests.exceptions import HTTPError, RequestException, Timeout
-from starwit_aic_api.models.decision import Decision, Module
+from starwit_aic_api.models.decision import Decision, Module, DecisionType
 from visionapi.anomaly_pb2 import AnomalyMessage
 
 from .config import HttpOutputConfig, LogLevel
@@ -17,7 +17,7 @@ class HttpOutput:
     def send_decision_message(self, anomaly_msg: AnomalyMessage, anomaly_id: str) -> None:        
         decision_payload = self._create_decision_msg(anomaly_msg, anomaly_id)
 
-        logger.info(f"Sending decisions to cockpit: {self.config.target_endpoint}")
+        logger.info(f"Sending decision to cockpit: {self.config.target_endpoint}")
         logger.debug(f"Decision payload: {decision_payload}")
         try:
             if self.config.auth:
@@ -60,7 +60,9 @@ class HttpOutput:
         output_msg = Decision()
         output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.module = Module()
-        output_msg.module.name = anomaly_msg.model_info.name
+        output_msg.module.name = self.config.module_name
+        output_msg.decision_type = DecisionType()
+        output_msg.decision_type.name = self.config.decision_type_name
         output_msg.acquisition_time = anomaly_msg.jpeg_frames[0].timestamp_utc_ms
 
         # Forward camera geo location
@@ -70,18 +72,18 @@ class HttpOutput:
         
         # type: ingore
         return output_msg.model_dump_json(by_alias=True, include={
-            "acquisition_time": ...,
-            "media_url": ...,
-            "action_visualization_url": ...,
-            "camera_latitude": ...,
-            "camera_longitude": ...,
-            "description": ...,
-            "module": {
-                "id": ...,
-                "name": ...
+            'acquisition_time': ...,
+            'media_url': ...,
+            'action_visualization_url': ...,
+            'camera_latitude': ...,
+            'camera_longitude': ...,
+            'description': ...,
+            'module': {
+                'id': ...,
+                'name': ...
             },
-            "decision_type": {
-                "id": ...,
-                "name": ...
+            'decision_type': {
+                'id': ...,
+                'name': ...
             }
         })

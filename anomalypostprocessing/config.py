@@ -29,6 +29,8 @@ class AuthConfig(BaseModel):
 class HttpOutputConfig(BaseModel):
     target_endpoint: AnyHttpUrl
     timeout: Annotated[int, Field(ge=0)] = 5
+    module_name: str
+    decision_type_name: str
     auth: Optional[AuthConfig] = None
     minio: MinioConfig
 
