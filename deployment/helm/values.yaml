@@ -3,6 +3,7 @@ fullnameOverride: "anomaly-post-processing"
 
 image:
   repository: docker.internal.starwit-infra.de/anomaly-post-processing
+  # tag: TAG # .Chart.AppVersion is used by default, but can be overridden here
 
 # This section is used verbatim as the settings.yaml for the anomaly-post-processing service (see settings.template.yaml for options)
 config:
