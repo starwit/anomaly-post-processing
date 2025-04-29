@@ -27,7 +27,7 @@ spec:
         - name: {{ include "fullname" $ }}
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
-          image: "{{ $imageRepo }}:{{ include "imageTag" $ }}"
+          image: "{{ $imageRepo }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: IfNotPresent
           ports:
             - name: prometheus

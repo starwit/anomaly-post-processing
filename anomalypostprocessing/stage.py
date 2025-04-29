@@ -1,16 +1,12 @@
-import contextlib
 import logging
 import signal
 import threading
-import requests
 
 from prometheus_client import Counter, Histogram, start_http_server
 from visionlib.pipeline.consumer import RedisConsumer
-from visionlib.pipeline.publisher import RedisPublisher
 
 from .anomalypostprocessing import AnomalyPostProcessing
 from .config import AnomalyPostProcessingConfig
-from requests.exceptions import HTTPError, Timeout, RequestException
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +43,6 @@ def run_stage():
     consume = RedisConsumer(CONFIG.redis_input.host, CONFIG.redis_input.port, 
                             stream_keys=[f'{CONFIG.redis_input.stream_prefix}:{stream_id}' for stream_id in CONFIG.redis_input.stream_ids])
     
-    if (CONFIG.redis_output.enabled):
-        publish = RedisPublisher(CONFIG.redis_output.host, CONFIG.redis_output.port) if CONFIG.redis_output is not None else contextlib.nullcontext()
-    
     with consume:
         for stream_key, proto_data in consume():
             if stop_event.is_set():
@@ -62,28 +55,4 @@ def run_stage():
 
             FRAME_COUNTER.inc()
 
-            output_proto_data = anomaly_post_processing.get(proto_data)
-
-            if output_proto_data is None or CONFIG.redis_output is None:
-                continue
-            
-            if (CONFIG.redis_output.enabled):
-                with publish:
-                    with REDIS_PUBLISH_DURATION.time():
-                        publish(f'{CONFIG.redis_output.stream_prefix}:{CONFIG.redis_output.stream_id}', output_proto_data)
-                        
-            if (CONFIG.http_sender.enabled):
-                logger.info(f"Send decisions to cockpit: {CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint}")
-                try:
-                    response = requests.post(CONFIG.http_sender.applicationUrl + CONFIG.http_sender.endpoint, data = output_proto_data, headers={"Content-Type": "application/json"})
-                    # Check if the request was successful
-                    if response.status_code != 200:
-                        logger.info(f"Request failed with status code: {response.status_code}")
-                except Timeout:
-                    logger.info("The request timed out.")
-                except HTTPError as http_err:
-                    logger.info(f"HTTP error occurred: {http_err}")
-                except RequestException as req_err:
-                    logger.info(f"Request error occurred: {req_err}")
-                except Exception as err:
-                    logger.info(f"An unexpected error occurred: {err}")
+            anomaly_post_processing.get(proto_data)

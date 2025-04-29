@@ -43,6 +43,6 @@ jobs:
 
     - name: push docker versioned
       run: |
-        DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)
+        DOCKER_VERSION=$(cat pyproject.toml | grep "version" | cut -d'=' -f2 | xargs echo -n)-${{ github.run_number }}
         docker tag docker.internal.starwit-infra.de/anomaly-post-processing:tmp docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION
         docker push docker.internal.starwit-infra.de/anomaly-post-processing:$DOCKER_VERSION
