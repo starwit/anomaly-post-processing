@@ -61,8 +61,6 @@ class HttpOutput:
         output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.module = Module()
         output_msg.module.name = self.config.module_name
-        output_msg.decision_type = DecisionType()
-        output_msg.decision_type.name = self.config.decision_type_name
         output_msg.acquisition_time = anomaly_msg.jpeg_frames[0].timestamp_utc_ms
 
         # Forward camera geo location
