@@ -79,5 +79,9 @@ class HttpOutput:
             'module': {
                 'id': ...,
                 'name': ...
+            },
+            'decision_type': {
+                'id': ...,
+                'name': ...
             }
         })
