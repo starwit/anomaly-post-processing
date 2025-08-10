@@ -17,7 +17,7 @@ permissions:
 
 env:
   IMAGE_NAME: anomaly-post-processing
-  DOCKER_ORG: starwitorg   
+  DOCKER_ORG: docker.internal.starwit-infra.de     
 
 jobs:
   create-release:
