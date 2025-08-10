@@ -1,6 +1,6 @@
 .PHONY: install build-deb clean check-settings test
 
-export PACKAGE_NAME=detection-aggregator
+export PACKAGE_NAME=anomalypostprocessing
 
 install: check-settings
 	poetry install -vvv
