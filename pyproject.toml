@@ -1,7 +1,7 @@
 [tool.poetry]
 package-mode = false
 name = "Anomaly Post Processing"
-version = "4.0.1"
+version = "4.0.5"
 description = "This component consumes Anomalies from Valkey, save videos and sends reporting data to receivers like ai-cockpit."
 authors = ["witchpou <anett.huebner@starwit.de>"]
 license = "AGPLv3"
@@ -20,6 +20,9 @@ tomlkit = "^0.13.2"
 opencv-python = "^4.11.0.86"
 minio = "^7.2.15"
 requests = "^2.32.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.4.1"
 
 [build-system]
 requires = ["poetry-core"]
