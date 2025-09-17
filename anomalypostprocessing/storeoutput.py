@@ -93,7 +93,10 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
         cv2.circle(frame_img, (x, y), 20, (0, 0, 255), -1)
 
     _, encoded_img = cv2.imencode('.jpeg', frame_img)
-    return encoded_img.tobytes()
+    if isinstance(encoded_img, bytes):
+        return encoded_img
+    else:   
+        return encoded_img.tobytes()
 
 
 def store_raw(output_directory: Path, frames: list[JpegFrame], trajectories: list[Trajectory]):

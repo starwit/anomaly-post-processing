@@ -56,7 +56,7 @@ class HttpOutput:
         except Exception as err:
             logger.error(f"An unexpected error occurred: {err}")
 
-    def _create_decision_msg(self, anomaly_msg: AnomalyMessage, anomaly_id: str) -> bytes:
+    def _create_decision_msg(self, anomaly_msg: AnomalyMessage, anomaly_id: str) -> str:
         output_msg = Decision()
         output_msg.media_url = f'{self.config.minio.bucket_name}/{anomaly_id}/annotated.mp4'
         output_msg.module = Module()
