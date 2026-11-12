@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import time
@@ -7,9 +8,10 @@ from pathlib import Path
 from zlib import crc32
 
 import av
-import cv2
 import numpy as np
 from minio import Minio
+from PIL import Image, ImageDraw
+from turbojpeg import TurboJPEG
 from visionapi.anomaly_pb2 import JpegFrame, Trajectory, TrajectoryPoint
 
 from .config import MinioConfig
@@ -17,6 +19,15 @@ from .config import MinioConfig
 log = logging.getLogger(__name__)
 
 DEFAULT_FRAMERATE = 10
+# Frames are kept in BGR channel order (as decoded by TurboJPEG), so colors are BGR, too.
+# Pillow does not care about channel order, it just calls the image mode "RGB".
+ANNOTATION_COLOR = (0, 0, 255)
+ANNOTATION_RADIUS = 20
+
+
+@functools.cache
+def get_jpeg() -> TurboJPEG:
+    return TurboJPEG()
 
 
 def store_annotated_video(output_file: Path, frames: list[JpegFrame], trajectories: list[Trajectory]) -> None:
@@ -90,19 +101,15 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
             if tr_point.timestamp_utc_ms == frame.timestamp_utc_ms:
                 center_points.append(tr_point.detection_center)
 
-    frame_data = frame.frame_data_jpeg
-    np_arr = np.frombuffer(frame_data, np.uint8)
-    frame_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-    height, width = frame_img.shape[:2]
+    image = Image.fromarray(get_jpeg().decode(frame.frame_data_jpeg))
+    draw = ImageDraw.Draw(image)
 
     for point in center_points:
-        x, y = point.x, point.y
-        x = int(x * width)
-        y = int(y * height)
-        cv2.circle(frame_img, (x, y), 20, (0, 0, 255), -1)
+        x = int(point.x * image.width)
+        y = int(point.y * image.height)
+        draw.ellipse((x - ANNOTATION_RADIUS, y - ANNOTATION_RADIUS, x + ANNOTATION_RADIUS, y + ANNOTATION_RADIUS), fill=ANNOTATION_COLOR)
 
-    return frame_img
+    return np.asarray(image)
 
 
 def store_raw(output_directory: Path, frames: list[JpegFrame], trajectories: list[Trajectory]):

@@ -1,5 +1,4 @@
 import av
-import cv2
 import numpy as np
 import pytest
 from unittest.mock import MagicMock, patch
@@ -11,7 +10,7 @@ def _make_frames(count, width=320, height=240, step_ms=100):
     for i in range(count):
         img = np.full((height, width, 3), (i * 20) % 256, np.uint8)
         frame = JpegFrame()
-        frame.frame_data_jpeg = cv2.imencode('.jpg', img)[1].tobytes()
+        frame.frame_data_jpeg = storeoutput.get_jpeg().encode(img)
         frame.timestamp_utc_ms = 1_000 + i * step_ms
         frames.append(frame)
     return frames
