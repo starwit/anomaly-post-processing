@@ -8,3 +8,7 @@ demo.py
 *.md
 *.sh
 *.yaml
+.git
+anomalies
+target
+output
