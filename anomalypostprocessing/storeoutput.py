@@ -1,11 +1,12 @@
 import json
 import logging
-import subprocess
 import time
 import zipfile
+from fractions import Fraction
 from pathlib import Path
 from zlib import crc32
 
+import av
 import cv2
 import numpy as np
 from minio import Minio
@@ -15,37 +16,46 @@ from .config import MinioConfig
 
 log = logging.getLogger(__name__)
 
+DEFAULT_FRAMERATE = 10
+
+
 def store_annotated_video(output_file: Path, frames: list[JpegFrame], trajectories: list[Trajectory]) -> None:
-    seconds_passed = (frames[-1].timestamp_utc_ms - frames[0].timestamp_utc_ms)/1_000
-    framerate = len(frames) / seconds_passed
-    ffmpeg_command = [
-            'ffmpeg', '-f', 'image2pipe', '-r', str(framerate),
-            '-vcodec', 'mjpeg', '-i', '-', '-c:v', 'libx264', '-crf', '25',
-            '-analyzeduration', '2147483647', '-probesize', '2147483647', '-y', output_file.resolve()
-        ]
-    
+    first_ts = frames[0].timestamp_utc_ms
+    duration_ms = frames[-1].timestamp_utc_ms - first_ts
+    # Average rate is only a hint for players; actual timing comes from per-frame pts
+    framerate = Fraction(len(frames) - 1) / Fraction(duration_ms, 1_000) if duration_ms > 0 else Fraction(DEFAULT_FRAMERATE)
+
     try:
-        process = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        start_time_millis = time.time() * 1000
-        try:
+        with av.open(str(output_file.resolve()), mode='w') as container:
+            stream = container.add_stream('libx264', rate=framerate.limit_denominator(1_000))
+            stream.pix_fmt = 'yuv420p'
+            stream.options = {'crf': '25'}
+            stream.time_base = Fraction(1, 1_000)
+
+            start_time_millis = time.time() * 1000
+            width = height = None
+            last_pts = -1
             for frame in frames:
-                annotated_frame = draw_trajectories_in_frame(frame, trajectories)
-                process.stdin.write(annotated_frame)
-                process.stdin.flush()
+                img = draw_trajectories_in_frame(frame, trajectories)
+                if width is None:
+                    # yuv420p requires even dimensions
+                    height, width = (img.shape[0] // 2) * 2, (img.shape[1] // 2) * 2
+                    stream.width, stream.height = width, height
+                img = np.ascontiguousarray(img[:height, :width])
+
+                video_frame = av.VideoFrame.from_ndarray(img, format='bgr24')
+                # Use real capture timestamps; enforce strictly increasing pts
+                pts = max(frame.timestamp_utc_ms - first_ts, last_pts + 1)
+                video_frame.pts = pts
+                video_frame.time_base = stream.time_base
+                last_pts = pts
+                container.mux(stream.encode(video_frame))
+
+            container.mux(stream.encode())
             log.debug("Average time per frame: " + str((time.time() * 1000 - start_time_millis) / len(frames)))
-        except Exception as ex:
-            log.error("Writing to ffmpeg process failed")
-            log.error(str(ex))
-            log.error(process.stderr.read().decode())
-
-        process.communicate()
-
-        if process.returncode == 0:
-            log.info(f"Video conversion completed successfully ({output_file.resolve()})")
-        else:
-            raise IOError(f"Video conversion failed with return code {process.returncode}.")
-    except (IOError, subprocess.SubprocessError) as e:
-        raise IOError(f"Could not create video from frames") from e
+        log.info(f"Video conversion completed successfully ({output_file.resolve()})")
+    except (av.error.FFmpegError, OSError, ValueError) as e:
+        raise IOError("Could not create video from frames") from e
 
 def save_file_to_minio(minio_config: MinioConfig, file_path: str, object_name: str) -> None:
     client = Minio(
@@ -72,7 +82,7 @@ def save_file_to_minio(minio_config: MinioConfig, file_path: str, object_name: s
     except Exception as e:
         raise IOError(f"Could not upload file {file_path} to MinIO") from e
 
-def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory]) -> bytes:
+def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory]) -> np.ndarray:
     center_points = []
 
     for tr in trajectories:
@@ -82,7 +92,7 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
 
     frame_data = frame.frame_data_jpeg
     np_arr = np.frombuffer(frame_data, np.uint8)
-    frame_img = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
+    frame_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
     height, width = frame_img.shape[:2]
 
@@ -92,11 +102,7 @@ def draw_trajectories_in_frame(frame: JpegFrame, trajectories: list[Trajectory])
         y = int(y * height)
         cv2.circle(frame_img, (x, y), 20, (0, 0, 255), -1)
 
-    _, encoded_img = cv2.imencode('.jpeg', frame_img)
-    if isinstance(encoded_img, bytes):
-        return encoded_img
-    else:   
-        return encoded_img.tobytes()
+    return frame_img
 
 
 def store_raw(output_directory: Path, frames: list[JpegFrame], trajectories: list[Trajectory]):

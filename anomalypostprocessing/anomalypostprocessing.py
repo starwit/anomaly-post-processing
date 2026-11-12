@@ -76,7 +76,7 @@ class AnomalyPostProcessing:
                     object_name = f"{anomaly_id}/{file.name}"
                     save_file_to_minio(self.config.http_output.minio, file, object_name)
         except Exception as e:
-            logger.error(f"Error saving anomaly: {e}")
+            logger.exception(f"Error saving anomaly: {e}")
 
         # Clean up
         shutil.rmtree(temp_output_dir, ignore_errors=True)
