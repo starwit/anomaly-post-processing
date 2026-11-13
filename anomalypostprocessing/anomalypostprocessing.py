@@ -1,6 +1,6 @@
 import logging
-import os
 import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -58,26 +58,24 @@ class AnomalyPostProcessing:
         if len(trajectories) == 0: 
             return
 
-        try:
-            # Create a temporary directory and store all necessary output artifacts
-            temp_output_dir = Path('./output')
-            os.makedirs(temp_output_dir, exist_ok=True)
-            store_annotated_video(temp_output_dir / 'annotated.mp4', frames, trajectories)
-            if self.config.raw_anomalies:
-                store_raw(temp_output_dir, frames, trajectories)
+        # Create a temporary directory (removed automatically) and store all necessary output artifacts
+        with tempfile.TemporaryDirectory(prefix=f'anomaly_{anomaly_id}_') as temp_dir:
+            try:
+                self._write_and_export(Path(temp_dir), frames, trajectories, anomaly_id)
+            except Exception as e:
+                logger.exception(f"Error saving anomaly: {e}")
 
-            # Copy output artifacts to local storage
-            if self.config.local_output is not None:
-                shutil.copytree(temp_output_dir, self.config.local_output.path / anomaly_id, dirs_exist_ok=True)
-            
-            # Upload output artifacts to MinIO if http_output is configured
-            if self.config.http_output is not None:
-                for file in temp_output_dir.iterdir():
-                    object_name = f"{anomaly_id}/{file.name}"
-                    save_file_to_minio(self.config.http_output.minio, file, object_name)
-        except Exception as e:
-            logger.exception(f"Error saving anomaly: {e}")
+    def _write_and_export(self, temp_output_dir: Path, frames, trajectories, anomaly_id: str):
+        store_annotated_video(temp_output_dir / 'annotated.mp4', frames, trajectories)
+        if self.config.raw_anomalies:
+            store_raw(temp_output_dir, frames, trajectories)
 
-        # Clean up
-        shutil.rmtree(temp_output_dir, ignore_errors=True)
+        # Copy output artifacts to local storage
+        if self.config.local_output is not None:
+            shutil.copytree(temp_output_dir, self.config.local_output.path / anomaly_id, dirs_exist_ok=True)
         
+        # Upload output artifacts to MinIO if http_output is configured
+        if self.config.http_output is not None:
+            for file in temp_output_dir.iterdir():
+                object_name = f"{anomaly_id}/{file.name}"
+                save_file_to_minio(self.config.http_output.minio, file, object_name)

@@ -42,3 +42,52 @@ def test_call_delegates_to_get():
     app.get = MagicMock()
     app(b'bytes')
     app.get.assert_called_once()
+
+
+def _write_dummy_video(output_file, frames, trajectories):
+    output_file.write_bytes(b'video')
+
+
+def _make_app(local_output_path=None):
+    config = MagicMock()
+    config.log_level = LogLevel.WARNING
+    config.http_output = None
+    config.raw_anomalies = False
+    config.local_output = MagicMock(path=local_output_path) if local_output_path else None
+    return AnomalyPostProcessing(config)
+
+
+def _make_msg():
+    msg = MagicMock()
+    msg.jpeg_frames = [1, 2]
+    msg.trajectories = [1]
+    return msg
+
+
+def test_save_anomaly_cleans_up_temp_dir_on_success(tmp_path, monkeypatch):
+    temp_root = tmp_path / 'tmp'
+    temp_root.mkdir()
+    local_output = tmp_path / 'local'
+    monkeypatch.setattr('tempfile.tempdir', str(temp_root))
+
+    with patch('anomalypostprocessing.anomalypostprocessing.store_annotated_video', side_effect=_write_dummy_video):
+        _make_app(local_output)._save_anomaly(_make_msg(), 'id')
+
+    assert (local_output / 'id' / 'annotated.mp4').read_bytes() == b'video'
+    assert list(temp_root.iterdir()) == []
+
+
+def test_save_anomaly_cleans_up_temp_dir_on_error(tmp_path, monkeypatch, caplog):
+    temp_root = tmp_path / 'tmp'
+    temp_root.mkdir()
+    monkeypatch.setattr('tempfile.tempdir', str(temp_root))
+
+    def write_then_fail(output_file, frames, trajectories):
+        _write_dummy_video(output_file, frames, trajectories)
+        raise IOError('boom')
+
+    with patch('anomalypostprocessing.anomalypostprocessing.store_annotated_video', side_effect=write_then_fail):
+        _make_app()._save_anomaly(_make_msg(), 'id')
+
+    assert 'Error saving anomaly: boom' in caplog.text
+    assert list(temp_root.iterdir()) == []
