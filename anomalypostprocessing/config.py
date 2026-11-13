@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Optional, Optional
+from typing import List, Optional
 
 from pydantic import AnyHttpUrl, BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -35,6 +35,8 @@ class HttpOutputConfig(BaseModel):
 
 class LocalOutputConfig(BaseModel):
     path: pathlib.Path
+    max_age_days: Optional[Annotated[float, Field(gt=0)]] = 14                   # delete anomalies older than this (null = no age limit)
+    max_size_gb: Optional[Annotated[float, Field(gt=0)]] = 10                    # delete oldest anomalies while total size exceeds this (null = no size limit)
 
 class AnomalyPostProcessingConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING

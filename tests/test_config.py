@@ -40,6 +40,24 @@ from pathlib import Path
 def test_local_output_config_path():
     c = LocalOutputConfig(path=Path('/tmp'))
     assert c.path == Path('/tmp')
+    assert c.max_age_days == 14
+    assert c.max_size_gb == 10
+
+def test_local_output_config_limits_can_be_disabled():
+    c = LocalOutputConfig(path=Path('/tmp'), max_age_days=None, max_size_gb=None)
+    assert c.max_age_days is None
+    assert c.max_size_gb is None
+
+def test_local_output_config_fractional_limits():
+    c = LocalOutputConfig(path=Path('/tmp'), max_age_days=0.5, max_size_gb=0.25)
+    assert c.max_age_days == 0.5
+    assert c.max_size_gb == 0.25
+
+@pytest.mark.parametrize('field', ['max_age_days', 'max_size_gb'])
+@pytest.mark.parametrize('value', [0, -1])
+def test_local_output_config_rejects_non_positive_limits(field, value):
+    with pytest.raises(ValidationError):
+        LocalOutputConfig(path=Path('/tmp'), **{field: value})
 
 # AnomalyPostProcessingConfig
 

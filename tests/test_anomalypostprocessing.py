@@ -48,12 +48,12 @@ def _write_dummy_video(output_file, frames, trajectories):
     output_file.write_bytes(b'video')
 
 
-def _make_app(local_output_path=None):
+def _make_app(local_output_path=None, max_age_days=None, max_size_gb=None):
     config = MagicMock()
     config.log_level = LogLevel.WARNING
     config.http_output = None
     config.raw_anomalies = False
-    config.local_output = MagicMock(path=local_output_path) if local_output_path else None
+    config.local_output = MagicMock(path=local_output_path, max_age_days=max_age_days, max_size_gb=max_size_gb) if local_output_path else None
     return AnomalyPostProcessing(config)
 
 
@@ -91,3 +91,29 @@ def test_save_anomaly_cleans_up_temp_dir_on_error(tmp_path, monkeypatch, caplog)
 
     assert 'Error saving anomaly: boom' in caplog.text
     assert list(temp_root.iterdir()) == []
+
+
+def test_save_anomaly_runs_housekeeping_when_limit_set(tmp_path):
+    local_output = tmp_path / 'local'
+    with patch('anomalypostprocessing.anomalypostprocessing.store_annotated_video', side_effect=_write_dummy_video), \
+         patch('anomalypostprocessing.anomalypostprocessing.cleanup_local_output') as mock_cleanup:
+        _make_app(local_output, max_age_days=14, max_size_gb=10)._save_anomaly(_make_msg(), 'id')
+    mock_cleanup.assert_called_once_with(local_output, 14, 10)
+
+
+def test_save_anomaly_skips_housekeeping_without_limits(tmp_path):
+    local_output = tmp_path / 'local'
+    with patch('anomalypostprocessing.anomalypostprocessing.store_annotated_video', side_effect=_write_dummy_video), \
+         patch('anomalypostprocessing.anomalypostprocessing.cleanup_local_output') as mock_cleanup:
+        _make_app(local_output)._save_anomaly(_make_msg(), 'id')
+    mock_cleanup.assert_not_called()
+
+
+def test_housekeeping_error_does_not_break_saving(tmp_path, caplog):
+    local_output = tmp_path / 'local'
+    with patch('anomalypostprocessing.anomalypostprocessing.store_annotated_video', side_effect=_write_dummy_video), \
+         patch('anomalypostprocessing.anomalypostprocessing.cleanup_local_output', side_effect=OSError('nope')):
+        _make_app(local_output, max_age_days=14)._save_anomaly(_make_msg(), 'id')
+    assert (local_output / 'id' / 'annotated.mp4').exists()
+    assert 'Error during local output housekeeping: nope' in caplog.text
+    assert 'Error saving anomaly' not in caplog.text

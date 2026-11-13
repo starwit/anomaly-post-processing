@@ -1,8 +1,11 @@
 import functools
 import json
 import logging
+import re
+import shutil
 import time
 import zipfile
+from datetime import datetime, timedelta
 from fractions import Fraction
 from pathlib import Path
 from zlib import crc32
@@ -25,6 +28,9 @@ ANNOTATION_COLOR = (0, 0, 255)
 ANNOTATION_RADIUS = 20
 # All pts are capture-time offsets in milliseconds
 TIME_BASE = Fraction(1, 1_000)
+# Matches anomaly ids as created in AnomalyPostProcessing.get() (e.g. 20261113_142501_a1b2c3)
+ANOMALY_DIR_PATTERN = re.compile(r'^\d{8}_\d{6}_[0-9a-f]{6}$')
+ANOMALY_TIMESTAMP_FORMAT = '%Y%m%d_%H%M%S'
 
 
 @functools.cache
@@ -193,3 +199,53 @@ def create_and_add_frames_to_zip(frames: list[JpegFrame], zip_file_path: str):
                 zip_output_stream.writestr(zip_info, data)
     except Exception as e:
         raise IOError(f"Could not create zip file {zip_file_path}") from e
+
+
+def _dir_size(directory: Path) -> int:
+    return sum(f.stat().st_size for f in directory.rglob('*') if f.is_file())
+
+
+def _delete_anomaly_dir(directory: Path, reason: str) -> bool:
+    try:
+        shutil.rmtree(directory)
+        log.info(f"Housekeeping: deleted {directory.name} ({reason})")
+        return True
+    except OSError as e:
+        log.warning(f"Housekeeping: could not delete {directory}: {e}")
+        return False
+
+
+def cleanup_local_output(path: Path, max_age_days: float | None, max_size_gb: float | None) -> None:
+    """Delete the oldest anomaly directories in `path` that exceed the given age and/or total size limit.
+    Only directories named like anomaly ids are considered; the newest one is never deleted by the size limit."""
+    if max_age_days is None and max_size_gb is None:
+        return
+
+    anomaly_dirs = sorted((d for d in path.iterdir() if d.is_dir() and ANOMALY_DIR_PATTERN.match(d.name)), key=lambda d: d.name)
+    deleted = 0
+
+    if max_age_days is not None:
+        cutoff = datetime.now() - timedelta(days=max_age_days)
+        remaining = []
+        for d in anomaly_dirs:
+            if datetime.strptime(d.name[:15], ANOMALY_TIMESTAMP_FORMAT) < cutoff:
+                if _delete_anomaly_dir(d, f"older than {max_age_days} days"):
+                    deleted += 1
+                    continue
+            remaining.append(d)
+        anomaly_dirs = remaining
+
+    if max_size_gb is not None and len(anomaly_dirs) > 1:
+        max_bytes = max_size_gb * 1024**3
+        sizes = [_dir_size(d) for d in anomaly_dirs]
+        total = sum(sizes)
+        # Keep the newest directory (the anomaly just written) in any case
+        for d, size in zip(anomaly_dirs[:-1], sizes[:-1]):
+            if total <= max_bytes:
+                break
+            if _delete_anomaly_dir(d, f"total size exceeds {max_size_gb} GB"):
+                deleted += 1
+                total -= size
+
+    if deleted:
+        log.info(f"Housekeeping: deleted {deleted} anomalies from {path}")

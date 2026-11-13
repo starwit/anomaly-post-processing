@@ -23,6 +23,8 @@ config:
     #   password: PASSWORD
   # local_output:                               # Uncomment to enable local output (do not change the path, it is where the PV is mounted)
   #   path: /anomaly-data
+  #   max_age_days: 14                          # Delete anomalies older than this (default 14, null = disabled)
+  #   max_size_gb: 10                           # Delete oldest anomalies when total size exceeds this (default 10, null = disabled)
 
 # If this is not set or empty, a default pull secret is created with the credentials from .pullSecret 
 # (and then used), otherwise it is assumed that the secrets exist

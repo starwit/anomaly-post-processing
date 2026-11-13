@@ -9,7 +9,8 @@ from uuid import uuid4
 from prometheus_client import Histogram, Summary
 from visionapi.anomaly_pb2 import AnomalyMessage
 
-from anomalypostprocessing.storeoutput import (save_file_to_minio,
+from anomalypostprocessing.storeoutput import (cleanup_local_output,
+                                               save_file_to_minio,
                                                store_annotated_video,
                                                store_raw)
 
@@ -73,9 +74,19 @@ class AnomalyPostProcessing:
         # Copy output artifacts to local storage
         if self.config.local_output is not None:
             shutil.copytree(temp_output_dir, self.config.local_output.path / anomaly_id, dirs_exist_ok=True)
+            self._cleanup_local_output()
         
         # Upload output artifacts to MinIO if http_output is configured
         if self.config.http_output is not None:
             for file in temp_output_dir.iterdir():
                 object_name = f"{anomaly_id}/{file.name}"
                 save_file_to_minio(self.config.http_output.minio, file, object_name)
+
+    def _cleanup_local_output(self):
+        local_output = self.config.local_output
+        if local_output.max_age_days is None and local_output.max_size_gb is None:
+            return
+        try:
+            cleanup_local_output(local_output.path, local_output.max_age_days, local_output.max_size_gb)
+        except Exception as e:
+            logger.exception(f"Error during local output housekeeping: {e}")

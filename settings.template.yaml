@@ -23,3 +23,5 @@ http_output:                                  # HTTP output settings (disabled i
     bucket_name: BUCKET_NAME
 # local_output:                               # Local file output settings (disabled if not defined)
 #   path: /tmp/anomalydetection
+#   max_age_days: 14                          # Delete anomalies older than this (default 14, null = disabled)
+#   max_size_gb: 10                           # Delete oldest anomalies when total size exceeds this (default 10, null = disabled)

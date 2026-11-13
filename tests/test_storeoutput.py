@@ -174,3 +174,66 @@ def test_create_and_add_frames_to_zip(tmp_path):
     zip_path = tmp_path / 'frames.zip'
     storeoutput.create_and_add_frames_to_zip([frame], str(zip_path))
     assert zip_path.exists()
+
+
+# Housekeeping (cleanup_local_output)
+
+def _make_anomaly_dir(root, age, size=0, suffix='abc123'):
+    from datetime import datetime
+    d = root / f'{(datetime.now() - age).strftime("%Y%m%d_%H%M%S")}_{suffix}'
+    d.mkdir()
+    (d / 'annotated.mp4').write_bytes(b'x' * size)
+    return d
+
+
+def test_cleanup_deletes_dirs_older_than_max_age(tmp_path):
+    from datetime import timedelta
+    old = _make_anomaly_dir(tmp_path, timedelta(days=15), suffix='000001')
+    new = _make_anomaly_dir(tmp_path, timedelta(days=13), suffix='000002')
+    storeoutput.cleanup_local_output(tmp_path, max_age_days=14, max_size_gb=None)
+    assert not old.exists()
+    assert new.exists()
+
+
+def test_cleanup_fractional_max_age(tmp_path):
+    from datetime import timedelta
+    old = _make_anomaly_dir(tmp_path, timedelta(hours=13), suffix='000001')
+    new = _make_anomaly_dir(tmp_path, timedelta(hours=11), suffix='000002')
+    storeoutput.cleanup_local_output(tmp_path, max_age_days=0.5, max_size_gb=None)
+    assert not old.exists()
+    assert new.exists()
+
+
+def test_cleanup_size_limit_deletes_oldest_first(tmp_path):
+    from datetime import timedelta
+    dirs = [_make_anomaly_dir(tmp_path, timedelta(minutes=10 - i), size=1000, suffix=f'00000{i}') for i in range(5)]
+    storeoutput.cleanup_local_output(tmp_path, max_age_days=None, max_size_gb=3000 / 1024**3)
+    assert [d.exists() for d in dirs] == [False, False, True, True, True]
+
+
+def test_cleanup_size_limit_keeps_newest_dir(tmp_path):
+    from datetime import timedelta
+    older = _make_anomaly_dir(tmp_path, timedelta(minutes=2), size=1000, suffix='000001')
+    newest = _make_anomaly_dir(tmp_path, timedelta(minutes=1), size=5000, suffix='000002')
+    storeoutput.cleanup_local_output(tmp_path, max_age_days=None, max_size_gb=1000 / 1024**3)
+    assert not older.exists()
+    assert newest.exists()
+
+
+def test_cleanup_ignores_unrelated_entries(tmp_path):
+    from datetime import timedelta
+    (tmp_path / 'lost+found').mkdir()
+    (tmp_path / 'notes.txt').write_bytes(b'x' * 5000)
+    (tmp_path / '20000101_000000_notahex').mkdir()
+    anomaly = _make_anomaly_dir(tmp_path, timedelta(days=30), size=5000)
+    storeoutput.cleanup_local_output(tmp_path, max_age_days=14, max_size_gb=1 / 1024**3)
+    assert not anomaly.exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ['20000101_000000_notahex', 'lost+found', 'notes.txt']
+
+
+def test_cleanup_without_limits_deletes_nothing(tmp_path):
+    from datetime import timedelta
+    d = _make_anomaly_dir(tmp_path, timedelta(days=365), size=5000)
+    _make_anomaly_dir(tmp_path, timedelta(days=1), size=5000, suffix='000002')
+    storeoutput.cleanup_local_output(tmp_path, max_age_days=None, max_size_gb=None)
+    assert d.exists()
