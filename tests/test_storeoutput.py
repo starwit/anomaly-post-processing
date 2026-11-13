@@ -61,6 +61,26 @@ def test_store_annotated_video_raises_ioerror_on_failure(tmp_path):
     with pytest.raises(IOError, match='Could not create video from frames'):
         storeoutput.store_annotated_video(tmp_path / 'missing_dir' / 'annotated.mp4', _make_frames(2), [_make_trajectory(0)])
 
+def test_store_annotated_video_skips_empty_frames(tmp_path):
+    frames = _make_frames(5)
+    frames[0].frame_data_jpeg = b''
+    frames[3].frame_data_jpeg = b''
+    output_file = tmp_path / 'annotated.mp4'
+    storeoutput.store_annotated_video(output_file, frames, [_make_trajectory(frames[1].timestamp_utc_ms)])
+
+    with av.open(str(output_file)) as container:
+        decoded = list(container.decode(container.streams.video[0]))
+    assert len(decoded) == 3
+
+
+def test_store_annotated_video_raises_if_no_frame_decodable(tmp_path):
+    frames = _make_frames(3)
+    for frame in frames:
+        frame.frame_data_jpeg = b''
+    with pytest.raises(IOError, match='Could not create video from frames'):
+        storeoutput.store_annotated_video(tmp_path / 'annotated.mp4', frames, [_make_trajectory(0)])
+
+
 @patch('anomalypostprocessing.storeoutput.Minio')
 def test_save_file_to_minio_calls_fput(mock_minio):
     minio_cfg = MagicMock()

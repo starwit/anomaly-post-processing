@@ -46,8 +46,15 @@ def store_annotated_video(output_file: Path, frames: list[JpegFrame], trajectori
             start_time_millis = time.time() * 1000
             width = height = None
             last_pts = -1
+            skipped = 0
             for frame in frames:
-                img = draw_trajectories_in_frame(frame, trajectories)
+                try:
+                    img = draw_trajectories_in_frame(frame, trajectories)
+                except OSError as e:
+                    # Skip undecodable frames (e.g. empty frame_data_jpeg) instead of dropping the whole video
+                    log.warning(f"Skipping undecodable frame (ts={frame.timestamp_utc_ms}, {len(frame.frame_data_jpeg)} bytes): {e}")
+                    skipped += 1
+                    continue
                 if width is None:
                     # yuv420p requires even dimensions
                     height, width = (img.shape[0] // 2) * 2, (img.shape[1] // 2) * 2
@@ -62,6 +69,10 @@ def store_annotated_video(output_file: Path, frames: list[JpegFrame], trajectori
                 last_pts = pts
                 container.mux(stream.encode(video_frame))
 
+            if width is None:
+                raise ValueError(f"None of the {len(frames)} frames could be decoded")
+            if skipped:
+                log.warning(f"Skipped {skipped} of {len(frames)} frames that could not be decoded")
             container.mux(stream.encode())
             log.debug("Average time per frame: " + str((time.time() * 1000 - start_time_millis) / len(frames)))
         log.info(f"Video conversion completed successfully ({output_file.resolve()})")
