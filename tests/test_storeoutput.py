@@ -57,6 +57,34 @@ def test_store_annotated_video_identical_timestamps(tmp_path):
         assert len(list(container.decode(video=0))) == 5
 
 
+def test_store_annotated_video_more_frames_than_encoder_lookahead(tmp_path):
+    # Packets are only muxed (and the mp4 header written, which changes stream.time_base) once the
+    # encoder's lookahead is filled. Timing must stay correct beyond that point.
+    frames = _make_frames(80, width=64, height=48)
+    frames[40].timestamp_utc_ms += 1  # some jitter
+    output_file = tmp_path / 'annotated.mp4'
+    storeoutput.store_annotated_video(output_file, frames, [_make_trajectory(0)])
+
+    with av.open(str(output_file)) as container:
+        decoded = list(container.decode(video=0))
+    assert len(decoded) == 80
+    assert decoded[-1].time == pytest.approx(7.9, abs=0.01)
+
+
+def test_store_annotated_video_irregular_timestamps(tmp_path):
+    # Closely spaced timestamps must not collapse onto the same pts (avg. rate is ~10 fps here)
+    frames = _make_frames(6)
+    for frame, offset in zip(frames, [0, 100, 130, 140, 400, 500]):
+        frame.timestamp_utc_ms = 1_000 + offset
+    output_file = tmp_path / 'annotated.mp4'
+    storeoutput.store_annotated_video(output_file, frames, [_make_trajectory(0)])
+
+    with av.open(str(output_file)) as container:
+        decoded = list(container.decode(video=0))
+    assert len(decoded) == 6
+    assert decoded[3].time == pytest.approx(0.14, abs=0.005)
+
+
 def test_store_annotated_video_raises_ioerror_on_failure(tmp_path):
     with pytest.raises(IOError, match='Could not create video from frames'):
         storeoutput.store_annotated_video(tmp_path / 'missing_dir' / 'annotated.mp4', _make_frames(2), [_make_trajectory(0)])

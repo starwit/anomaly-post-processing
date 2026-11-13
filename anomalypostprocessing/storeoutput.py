@@ -23,6 +23,8 @@ DEFAULT_FRAMERATE = 10
 # Pillow does not care about channel order, it just calls the image mode "RGB".
 ANNOTATION_COLOR = (0, 0, 255)
 ANNOTATION_RADIUS = 20
+# All pts are capture-time offsets in milliseconds
+TIME_BASE = Fraction(1, 1_000)
 
 
 @functools.cache
@@ -41,7 +43,10 @@ def store_annotated_video(output_file: Path, frames: list[JpegFrame], trajectori
             stream = container.add_stream('libx264', rate=framerate.limit_denominator(1_000))
             stream.pix_fmt = 'yuv420p'
             stream.options = {'crf': '25'}
-            stream.time_base = Fraction(1, 1_000)
+            # Codec must use ms time base, too. Otherwise it defaults to 1/rate and PyAV rescales our ms pts
+            # into it, which can map jittery timestamps onto the same pts -> non-monotonic DTS -> mux fails (EINVAL)
+            stream.time_base = TIME_BASE
+            stream.codec_context.time_base = TIME_BASE
 
             start_time_millis = time.time() * 1000
             width = height = None
@@ -65,7 +70,8 @@ def store_annotated_video(output_file: Path, frames: list[JpegFrame], trajectori
                 # Use real capture timestamps; enforce strictly increasing pts
                 pts = max(frame.timestamp_utc_ms - first_ts, last_pts + 1)
                 video_frame.pts = pts
-                video_frame.time_base = stream.time_base
+                # Do not use stream.time_base here: the mp4 muxer changes it (e.g. to 1/16000) when writing the header
+                video_frame.time_base = TIME_BASE
                 last_pts = pts
                 container.mux(stream.encode(video_frame))
 
