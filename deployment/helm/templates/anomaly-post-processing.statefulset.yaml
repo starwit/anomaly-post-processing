@@ -23,6 +23,11 @@ spec:
       serviceAccountName: {{ include "serviceAccountName" $ }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        {{- $redisIn := $.Values.config.redis_input }}
+        - name: wait-for-valkey-in
+          image: valkey/valkey:7.2.6-alpine
+          command: ["sh", "-c", "while ! redis-cli -h {{ $redisIn.host | default "localhost" }} -p {{ $redisIn.port | default 6379 }} ping ; do echo \"$(date -Iseconds) - still waiting for valkey\"; sleep 1; done"]
       containers:
         - name: {{ include "fullname" $ }}
           securityContext:
