@@ -7,7 +7,8 @@ permissions: read-all
 
 env:
   IMAGE_NAME: anomaly-post-processing
-  DOCKER_ORG: docker.internal.starwit-infra.de  
+  DOCKERHUB_USERNAME: starwit
+  DOCKERHUB_ORG: starwitorg
 
 jobs:
   build:
@@ -21,9 +22,8 @@ jobs:
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.DOCKER_ORG }}
-        username: ${{ secrets.DOCKER_INTERNAL_USERNAME }}
-        password: ${{ secrets.DOCKER_INTERNAL_PASSWORD }}
+        username: ${{ env.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -40,5 +40,5 @@ jobs:
         sbom: true
         provenance: mode=max
         push: true
-        tags: ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:${{ env.DOCKER_VERSION }}-${{ github.run_number }}
+        tags: ${{ env.DOCKERHUB_ORG }}/${{ env.IMAGE_NAME }}:${{ env.DOCKER_VERSION }}-${{ github.run_number }}
 

@@ -1,5 +1,5 @@
 apiVersion: v2
-name: anomaly-post-processing
+name: anomaly-post-processing-chart
 description: Helm chart for processing anomalies in valkey and save videos to minio
 
 # A chart can be either an 'application' or a 'library' chart.

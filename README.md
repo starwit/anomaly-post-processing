@@ -31,8 +31,8 @@ The `settings.template.yaml` should always reflect a correct and fully fledged s
 The following Github Actions are available:
 
 * [PR build](.github/workflows/pr-build.yml): Builds docker image for each pull request to main branch. Inside the docker image, `poetry install` and `poetry run python test.py` are executed, to compile and test entire python code.
-* [Build and publish latest image](.github/workflows/build-publish-latest.yml): Manually executed action. Same like PR build. Additionally puts latest docker image to internal docker registry.
-* [Create release](.github/workflows/create-release.yml): Manually executed action. Creates a github release with tag, docker image in internal docker registry, helm chart in chartmuseum by using and incrementing the version in pyproject.toml. Poetry is updating to next version by using "patch, minor and major" keywords. If you want to change to non-incremental version, set version in directly in pyproject.toml and execute create release afterwards.
+* [Build and publish latest image](.github/workflows/build-publish-latest.yml): Manually executed action. Same like PR build. Additionally puts latest docker image to Docker Hub (`starwitorg/anomaly-post-processing`).
+* [Create release](.github/workflows/create-release.yml): Manually executed action. Creates a github release with tag, docker image on Docker Hub (`starwitorg/anomaly-post-processing`), helm chart on Docker Hub (`oci://registry-1.docker.io/starwitorg/anomaly-post-processing-chart`) by using and incrementing the version in pyproject.toml. Poetry is updating to next version by using "patch, minor and major" keywords. If you want to change to non-incremental version, set version in directly in pyproject.toml and execute create release afterwards.
 
 ## Dependabot Version Update
 
