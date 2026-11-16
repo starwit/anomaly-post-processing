@@ -8,6 +8,18 @@ image:
   repository: starwitorg/anomaly-post-processing
   # tag: TAG # .Chart.AppVersion is used by default, but can be overridden here
 
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 1000m
+  #   memory: 1Gi
+  # requests:
+  #   cpu: 250m
+  #   memory: 256Mi
+
 # This section is used verbatim as the settings.yaml for the anomaly-post-processing service (see settings.template.yaml for options)
 config:
   raw_anomalies: False                          # If True, raw anomaly data (frames, metadata) will be added to all outputs
